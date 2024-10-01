@@ -1,0 +1,2 @@
+-- TODO: This dataset is gated, needs auth token
+-- https://huggingface.co/docs/hub/en/datasets-duckdb
