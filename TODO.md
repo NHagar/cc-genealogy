@@ -1,0 +1,4 @@
+- Query multithreading
+- CulturaX query
+- Full query coordinator
+- Remove sampling
