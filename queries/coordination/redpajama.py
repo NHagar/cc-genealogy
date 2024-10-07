@@ -6,7 +6,7 @@ from tqdm import tqdm
 urlpath = Path("./data/redpajama_urls.txt")
 querypath = Path("./queries/domains/redpajama_v2.sql")
 
-con = duckdb.connect("./data/redpajama.db", read_only=False)
+con = duckdb.connect("./data/domain_counts/redpajama.db", read_only=False)
 
 with open(urlpath, 'r') as file:
     urls = file.readlines()[:5]

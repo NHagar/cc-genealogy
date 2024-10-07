@@ -6,7 +6,7 @@ from tqdm import tqdm
 urlpath = Path("./data/dolma_urls.txt")
 querypath = Path("./queries/domains/dolma.sql")
 
-con = duckdb.connect("./data/dolma.db", read_only=False)
+con = duckdb.connect("./data/domain_counts/dolma.db", read_only=False)
 
 with open(urlpath, 'r') as file:
     urls = file.readlines()
