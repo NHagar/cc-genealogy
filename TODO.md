@@ -1,3 +1,3 @@
-- Query multithreading
 - CulturaX query
+- Query multithreading
 - Remove sampling
