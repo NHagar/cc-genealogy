@@ -3,7 +3,6 @@ SELECT
     SPLIT_PART(SPLIT_PART(metadata.url, '://', 2), '/', 1) AS domain,
 FROM
     READ_JSON('{url}')
-LIMIT 1000
 )
 SELECT
     domain,

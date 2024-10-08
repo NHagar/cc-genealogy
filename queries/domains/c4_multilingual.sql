@@ -3,7 +3,6 @@ SELECT
     SPLIT_PART(SPLIT_PART(url, '://', 2), '/', 1) AS domain,
 FROM
     'hf://datasets/allenai/c4/multilingual/*.json.gz'
-LIMIT 1000
 )
 SELECT
     domain,

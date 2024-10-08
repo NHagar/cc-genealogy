@@ -4,7 +4,6 @@ SELECT
 FROM
 -- TODO: I think this is the raw split, need to verify
     READ_JSON('hf://datasets/allenai/MADLAD-400/data/*/*.jsonl.gz')
-LIMIT 1000
 )
 SELECT
     domain,

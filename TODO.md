@@ -1,2 +1,0 @@
-- Query multithreading
-- Remove sampling
