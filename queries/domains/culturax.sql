@@ -1,5 +1,3 @@
--- TODO: This dataset is gated, needs auth token
--- https://huggingface.co/docs/hub/en/datasets-duckdb
 CREATE SECRET hf_token (TYPE HUGGINGFACE, TOKEN '{hf_token_value}');
 CREATE TABLE domains AS (
 WITH domains AS (

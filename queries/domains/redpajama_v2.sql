@@ -2,7 +2,6 @@ WITH domains AS (
 SELECT
     SPLIT_PART(SPLIT_PART(url, '://', 2), '/', 1) AS domain,
 FROM
--- TODO: Will need a coordinator/params to run for every file
     READ_JSON('{url}')
 LIMIT 1000
 )
