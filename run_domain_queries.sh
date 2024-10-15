@@ -11,3 +11,4 @@
 
 python queries/coordination/dolma.py
 python queries/coordination/redpajama.py
+python queries/coordination/culturax.py
