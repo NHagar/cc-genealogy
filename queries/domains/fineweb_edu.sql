@@ -2,7 +2,7 @@ WITH domains AS (
 SELECT
     SPLIT_PART(SPLIT_PART(url, '://', 2), '/', 1) AS domain,
 FROM
-    'hf://datasets/HuggingFaceFW/fineweb-edu/data/*/*.parquet'
+    '{fpath}'
 )
 SELECT
     domain,

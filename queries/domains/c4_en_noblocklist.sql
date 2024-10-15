@@ -2,7 +2,7 @@ WITH domains AS (
 SELECT
     SPLIT_PART(SPLIT_PART(url, '://', 2), '/', 1) AS domain,
 FROM
-    'hf://datasets/allenai/c4/en.noblocklist/*.json.gz'
+    '{fpath}'
 )
 SELECT
     domain,

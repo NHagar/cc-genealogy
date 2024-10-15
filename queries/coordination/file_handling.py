@@ -52,7 +52,7 @@ def crawl(data_path, query_path, crawl_errors=False):
         file = file.strip()
         fname = file.split("/")[-1]
         try:
-            query = query_template.format(file)
+            query = query_template.format(fpath=file)
             con.execute(f"CREATE TABLE {fname} AS ({query})")
             with open(data_path / "seen.txt", "a") as f:
                 f.write(f"{file}\n")
