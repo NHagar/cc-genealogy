@@ -12,4 +12,4 @@ FROM
 GROUP BY
     domain
 ORDER BY
-    count DESC;
+    count DESC

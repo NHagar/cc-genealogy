@@ -43,5 +43,5 @@ paths = [
 
 for p in paths:
     print(f"Initializing crawler for {p[0]}")
-    data_path = initialize_crawler(p[0])
+    data_path = initialize_crawler(p[0], skip_existing=False)
     crawl(data_path, p[1])

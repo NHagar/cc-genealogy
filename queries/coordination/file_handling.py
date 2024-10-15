@@ -12,7 +12,7 @@ def initialize_crawler(pattern: str, skip_existing=True):
 
     data_path = Path(f"data/{sub_name}")
 
-    if skip_existing or not data_path.exists():
+    if not skip_existing or not data_path.exists():
         data_path.mkdir(parents=True, exist_ok=True)
         to_crawl_path = data_path / "to_crawl.txt"
         seen_path = data_path / "seen.txt"
@@ -53,10 +53,11 @@ def crawl(data_path, query_path, crawl_errors=False):
 
     for file in tqdm(to_crawl):
         file = file.strip()
-        fname = file.split("/")[-1]
+        fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
         try:
-            query = query_template.format(fpath=file)
-            con.execute(f"CREATE TABLE {fname} AS ({query})")
+            query = query_template.format(fpath=f"hf://{file}")
+            q = f"CREATE TABLE {fname} AS ({query})"
+            con.execute(q)
             with open(data_path / "seen.txt", "a") as f:
                 f.write(f"{file}\n")
         except Exception:
