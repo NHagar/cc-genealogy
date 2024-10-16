@@ -1,14 +1,20 @@
-./duckdb -csv < queries/domains/c4_en.sql >> data/domain_counts/c4_en.csv
-./duckdb -csv < queries/domains/c4_en_noblocklist.sql >> data/domain_counts/c4_en_noblocklist.csv
-./duckdb -csv < queries/domains/c4_multilingual.sql >> data/domain_counts/c4_multilingual.csv
-./duckdb -csv < queries/domains/c4_realnewslike.sql >> data/domain_counts/c4_realnewslike.csv
-./duckdb -csv < queries/domains/culturax.sql >> data/domain_counts/culturax.csv
-./duckdb -csv < queries/domains/falcon_refinedweb.sql >> data/domain_counts/falcon_refinedweb.csv
-./duckdb -csv < queries/domains/fineweb.sql >> data/domain_counts/fineweb.csv
-./duckdb -csv < queries/domains/fineweb_edu.sql >> data/domain_counts/fineweb_edu.csv
-./duckdb -csv < queries/domains/madlad_400_cleaned.sql >> data/domain_counts/madlad_400_cleaned.csv
-./duckdb -csv < queries/domains/madlad_400_raw.sql >> data/domain_counts/madlad_400_raw.csv
+#!/bin/bash
+#SBATCH --account=p32491
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --time=24:00:00
+#SBATCH --mem-per-cpu=4G
+#SBATCH --job-name=cc-coordinator
 
-python queries/coordination/dolma.py
-python queries/coordination/redpajama.py
-python queries/coordination/culturax.py
+module purge
+
+module load mamba
+
+mamba init
+
+mamba activate /home/nrh146/.conda/envs/cc
+
+python ./queries/run_queries.py
+
+

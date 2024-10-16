@@ -4,3 +4,5 @@ data/
 .env
 __pycache__/
 .DS_Store
+duckdb
+slurm*
