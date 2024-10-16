@@ -15,6 +15,4 @@ mamba init
 
 mamba activate /home/nrh146/.conda/envs/cc
 
-python ./queries/run_queries.py
-
-
+python ./queries/run_queries.py --dataset falcon
