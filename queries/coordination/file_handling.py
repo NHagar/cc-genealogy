@@ -44,7 +44,7 @@ def crawl(data_path, query_path, crawl_errors=False):
     with open(data_path / "error.txt", "r") as f:
         error = f.readlines()
 
-    con = duckdb.connect(data_path / "database.db")
+    con = duckdb.connect(str(data_path / "database.db"))
 
     if not crawl_errors:
         to_crawl = list(set(to_crawl) - set(seen) - set(error))
