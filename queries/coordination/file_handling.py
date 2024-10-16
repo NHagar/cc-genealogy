@@ -54,12 +54,12 @@ def crawl(data_path, query_path, crawl_errors=False):
     for file in tqdm(to_crawl):
         file = file.strip()
         fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
-        # try:
-        query = query_template.format(fpath=f"hf://{file}")
-        q = f"CREATE TABLE a{fname} AS ({query})"
-        con.execute(q)
-        with open(data_path / "seen.txt", "a") as f:
-            f.write(f"{file}\n")
-        # except Exception:
-        #     with open(data_path / "error.txt", "a") as f:
-        #         f.write(f"{file}\n")
+        try:
+            query = query_template.format(fpath=f"hf://{file}")
+            q = f"CREATE TABLE a{fname} AS ({query})"
+            con.execute(q)
+            with open(data_path / "seen.txt", "a") as f:
+                f.write(f"{file}\n")
+        except Exception:
+            with open(data_path / "error.txt", "a") as f:
+                f.write(f"{file}\n")
