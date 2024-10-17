@@ -1,12 +1,16 @@
 from pathlib import Path
 
-import duckdb
-from tqdm import tqdm
+from file_handling import crawl
 
 urlpath = Path("./data/dolma_urls.txt")
 querypath = Path("./queries/domains/dolma.sql")
+sub_name = "dolma"
+data_path = Path(f"data/{sub_name}")
 
-con = duckdb.connect("./data/domain_counts/dolma.db", read_only=False)
+data_path.mkdir(parents=True, exist_ok=True)
+to_crawl_path = data_path / "to_crawl.txt"
+seen_path = data_path / "seen.txt"
+error_path = data_path / "error.txt"
 
 with open(urlpath, "r") as file:
     urls = file.readlines()
@@ -23,12 +27,14 @@ with open(urlpath, "r") as file:
         ]
     ]
 
-with open(querypath, "r") as file:
-    query = file.read()
+with open(to_crawl_path, "w") as f:
+    for url in urls_filtered:
+        f.write(f"{url}")
 
-for i, url in tqdm(enumerate(urls[:5])):
-    query_formatted = query.format(url=url.strip())
-    create_statement = f"CREATE TABLE dolma_domains_{i} AS ({query_formatted});"
-    con.execute(create_statement)
+with open(seen_path, "w") as f:
+    pass
 
-con.close()
+with open(error_path, "w") as f:
+    pass
+
+crawl(data_path, querypath, crawl_errors=False, is_hf=False)
