@@ -38,7 +38,14 @@ def initialize_crawler(pattern: str, skip_existing=True, requires_token=False):
     return data_path
 
 
-def crawl(data_path, query_path, crawl_errors=False, is_hf=True, requires_token=False):
+def crawl(
+    data_path,
+    query_path,
+    crawl_errors=False,
+    is_hf=True,
+    requires_token=False,
+    stretch_format=False,
+):
     with open(query_path, "r") as f:
         query_template = f.read()
 
@@ -65,7 +72,10 @@ def crawl(data_path, query_path, crawl_errors=False, is_hf=True, requires_token=
 
     for file in tqdm(to_crawl):
         file = file.strip()
-        fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
+        if stretch_format:
+            fname = "_".join(file.split("/")[-3:]).replace("-", "_").replace(".", "_")
+        else:
+            fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
         # try:
         if is_hf:
             fpath = f"hf://{file}"
