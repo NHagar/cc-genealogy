@@ -76,16 +76,16 @@ def crawl(
             fname = "_".join(file.split("/")[-3:]).replace("-", "_").replace(".", "_")
         else:
             fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
-        # try:
-        if is_hf:
-            fpath = f"hf://{file}"
-        else:
-            fpath = file
-        query = query_template.format(fpath=fpath)
-        q = f"CREATE TABLE a{fname} AS ({query})"
-        con.execute(q)
-        with open(data_path / "seen.txt", "a") as f:
-            f.write(f"{file}\n")
-        # except Exception:
-        #     with open(data_path / "error.txt", "a") as f:
-        #         f.write(f"{file}\n")
+        try:
+            if is_hf:
+                fpath = f"hf://{file}"
+            else:
+                fpath = file
+            query = query_template.format(fpath=fpath)
+            q = f"CREATE TABLE a{fname} AS ({query})"
+            con.execute(q)
+            with open(data_path / "seen.txt", "a") as f:
+                f.write(f"{file}\n")
+        except Exception:
+            with open(data_path / "error.txt", "a") as f:
+                f.write(f"{file}\n")
