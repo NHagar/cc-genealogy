@@ -6,3 +6,4 @@ __pycache__/
 .DS_Store
 duckdb
 slurm*
+upload_reqs.sh
