@@ -1,12 +1,19 @@
+import os
 from pathlib import Path
 
 import duckdb
+from dotenv import load_dotenv
 from huggingface_hub import HfFileSystem
 from tqdm import tqdm
 
 
-def initialize_crawler(pattern: str, skip_existing=True):
-    fs = HfFileSystem()
+def initialize_crawler(pattern: str, skip_existing=True, requires_token=False):
+    if requires_token:
+        load_dotenv()
+        token = os.getenv("HF_TOKEN")
+        fs = HfFileSystem(token=token)
+    else:
+        fs = HfFileSystem()
     files = fs.glob(pattern)
     sub_name = "_".join(pattern.split("datasets/")[1].split("/")[0:-1])
 
@@ -31,7 +38,7 @@ def initialize_crawler(pattern: str, skip_existing=True):
     return data_path
 
 
-def crawl(data_path, query_path, crawl_errors=False, is_hf=True):
+def crawl(data_path, query_path, crawl_errors=False, is_hf=True, requires_token=False):
     with open(query_path, "r") as f:
         query_template = f.read()
 
@@ -50,6 +57,11 @@ def crawl(data_path, query_path, crawl_errors=False, is_hf=True):
         to_crawl = list(set(to_crawl) - set(seen) - set(error))
     else:
         to_crawl = list(set(error) - set(seen))
+
+    if requires_token:
+        load_dotenv()
+        token = os.getenv("HF_TOKEN")
+        con.execute(f"CREATE SECRET hf_token (TYPE HUGGINGFACE, TOKEN '{token}');")
 
     for file in tqdm(to_crawl):
         file = file.strip()
