@@ -10,9 +10,7 @@
 module purge
 
 module load mamba
-
-mamba init
-
+source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
 python ./queries/run_queries.py --dataset madlad_cleaned
