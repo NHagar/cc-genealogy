@@ -13,4 +13,4 @@ module load mamba
 source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
-python ./queries/run_queries.py --dataset fineweb
+python ./queries/run_queries.py --dataset fineweb --errors

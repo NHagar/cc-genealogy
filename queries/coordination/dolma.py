@@ -37,4 +37,4 @@ with open(seen_path, "w") as f:
 with open(error_path, "w") as f:
     pass
 
-crawl(data_path, querypath, crawl_errors=False, is_hf=False)
+crawl(data_path, querypath, crawl_errors=True, is_hf=False)
