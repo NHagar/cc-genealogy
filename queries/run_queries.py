@@ -47,10 +47,11 @@ paths = {
 
 parser = argparse.ArgumentParser(description="Run queries on selected datasets.")
 parser.add_argument("--dataset", choices=paths.keys(), help="The dataset to process")
+parser.add_argument("--errors", action="store_true", help="Retry failed queries")
 
 if __name__ == "__main__":
     args = parser.parse_args()
     selected_path = paths[args.dataset]
     print(f"Initializing crawler for {selected_path[0]}")
     data_path = initialize_crawler(selected_path[0], skip_existing=True)
-    crawl(data_path, selected_path[1])
+    crawl(data_path, selected_path[1], crawl_errors=args.errors)
