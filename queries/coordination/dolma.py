@@ -27,14 +27,15 @@ with open(urlpath, "r") as file:
         ]
     ]
 
-with open(to_crawl_path, "w") as f:
-    for url in urls_filtered:
-        f.write(f"{url}")
+if not to_crawl_path.exists():
+    with open(to_crawl_path, "w") as f:
+        for url in urls_filtered:
+            f.write(f"{url}")
 
-with open(seen_path, "w") as f:
-    pass
+    with open(seen_path, "w") as f:
+        pass
 
-with open(error_path, "w") as f:
-    pass
+    with open(error_path, "w") as f:
+        pass
 
 crawl(data_path, querypath, crawl_errors=True, is_hf=False)
