@@ -13,4 +13,4 @@ module load mamba
 source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
-python ./queries/run_queries.py --dataset c4_en
+python ./queries/run_queries.py --dataset c4_en --errors
