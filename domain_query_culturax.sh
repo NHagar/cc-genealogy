@@ -13,4 +13,4 @@ module load mamba
 source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
-python ./queries/coordination/culturax.py
+python ./queries/coordination/culturax.py --errors
