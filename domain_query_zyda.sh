@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=168:00:00
 #SBATCH --mem-per-cpu=4G
-#SBATCH --job-name=cc-coordinator
+#SBATCH --job-name=cc-coordinator-zyda
 
 module purge
 
