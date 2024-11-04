@@ -47,6 +47,10 @@ paths = {
         "hf://datasets/Zyphra/Zyda-2/data/**/*.parquet",
         query_path / "zyda_2.sql",
     ),
+    "dclm": (
+        "hf://datasets/mlfoundations/dclm-baseline-1.0-parquet/filtered/**/*.parquet",
+        query_path / "dclm_baseline.sql",
+    ),
 }
 
 parser = argparse.ArgumentParser(description="Run queries on selected datasets.")
