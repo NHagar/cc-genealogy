@@ -56,10 +56,11 @@ parser.add_argument("--errors", action="store_true", help="Retry failed queries"
 if __name__ == "__main__":
     args = parser.parse_args()
     selected_path = paths[args.dataset]
-    if "fineweb" in args.dataset or "dolma" in args.dataset or "madlad" in args.dataset:
-        stretch_format = True
-    else:
-        stretch_format = False
+    stretch_format = True
+    # if "fineweb" in args.dataset or "dolma" in args.dataset or "madlad" in args.dataset:
+    #     stretch_format = True
+    # else:
+    #     stretch_format = False
     print(f"Initializing crawler for {selected_path[0]}")
     data_path = initialize_crawler(selected_path[0], skip_existing=True)
     crawl(
