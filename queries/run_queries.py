@@ -43,6 +43,10 @@ paths = {
         "hf://datasets/allenai/MADLAD-400/data-v1p5/*/noisy*.jsonl.gz",
         query_path / "madlad_400_raw.sql",
     ),
+    "zyda_2": (
+        "hf://datasets/Zyphra/Zyda-2/data/**/*.parquet",
+        query_path / "zyda_2.sql",
+    ),
 }
 
 parser = argparse.ArgumentParser(description="Run queries on selected datasets.")
