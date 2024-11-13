@@ -73,7 +73,8 @@ def crawl(
     for file in tqdm(to_crawl):
         file = file.strip()
         if stretch_format:
-            fname = "_".join(file.split("/")[-3:]).replace("-", "_").replace(".", "_")
+            parts = [i.strip() for i in file.split("/")[-3:]]
+            fname = "_".join(parts).replace("-", "_").replace(".", "_")
         else:
             fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
         try:

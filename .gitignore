@@ -10,3 +10,4 @@ upload_reqs.sh
 download_data.sh
 copy_to_onedrive.sh
 consolidated_data_files/
+deepdive.sh
