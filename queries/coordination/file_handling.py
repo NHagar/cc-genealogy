@@ -49,20 +49,17 @@ def _process_file(args, con, lock):
     else:
         fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
 
-    try:
-        if is_hf:
-            fpath = f"hf://{file}"
-        else:
-            fpath = file
-        query = query_template.format(fpath=fpath)
-        q = f"CREATE TABLE a{fname} AS ({query})"
+    if is_hf:
+        fpath = f"hf://{file}"
+    else:
+        fpath = file
+    query = query_template.format(fpath=fpath)
+    q = f"CREATE TABLE a{fname} AS ({query})"
 
-        with lock:
-            con.execute(q)
+    with lock:
+        con.execute(q)
 
-        return (file, True, None)
-    except Exception as e:
-        return (file, False, str(e))
+    return (file, True, None)
 
 
 def crawl(
