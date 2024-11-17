@@ -72,4 +72,5 @@ if __name__ == "__main__":
         selected_path[1],
         crawl_errors=args.errors,
         stretch_format=stretch_format,
+        n_threads=4,
     )

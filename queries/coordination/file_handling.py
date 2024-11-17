@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import duckdb
 from dotenv import load_dotenv
@@ -38,6 +40,31 @@ def initialize_crawler(pattern: str, skip_existing=True, requires_token=False):
     return data_path
 
 
+def _process_file(args, con, lock):
+    file, query_template, is_hf, stretch_format = args
+    file = file.strip()
+    if stretch_format:
+        parts = [i.strip() for i in file.split("/")[-3:]]
+        fname = "_".join(parts).replace("-", "_").replace(".", "_")
+    else:
+        fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
+
+    try:
+        if is_hf:
+            fpath = f"hf://{file}"
+        else:
+            fpath = file
+        query = query_template.format(fpath=fpath)
+        q = f"CREATE TABLE a{fname} AS ({query})"
+
+        with lock:
+            con.execute(q)
+
+        return (file, True, None)
+    except Exception as e:
+        return (file, False, str(e))
+
+
 def crawl(
     data_path,
     query_path,
@@ -45,6 +72,7 @@ def crawl(
     is_hf=True,
     requires_token=False,
     stretch_format=False,
+    n_threads=None,
 ):
     with open(query_path, "r") as f:
         query_template = f.read()
@@ -59,6 +87,7 @@ def crawl(
         error = f.readlines()
 
     con = duckdb.connect(str(data_path / "database.db"))
+    lock = threading.Lock()
 
     if not crawl_errors:
         to_crawl = list(set(to_crawl) - set(seen) - set(error))
@@ -70,23 +99,21 @@ def crawl(
         token = os.getenv("HF_TOKEN")
         con.execute(f"CREATE SECRET hf_token (TYPE HUGGINGFACE, TOKEN '{token}');")
 
-    for file in tqdm(to_crawl):
-        file = file.strip()
-        if stretch_format:
-            parts = [i.strip() for i in file.split("/")[-3:]]
-            fname = "_".join(parts).replace("-", "_").replace(".", "_")
-        else:
-            fname = file.split("/")[-1].replace("-", "_").replace(".", "_")
-        try:
-            if is_hf:
-                fpath = f"hf://{file}"
-            else:
-                fpath = file
-            query = query_template.format(fpath=fpath)
-            q = f"CREATE TABLE a{fname} AS ({query})"
-            con.execute(q)
+    # Prepare arguments for parallel processing
+    args = [(file, query_template, is_hf, stretch_format) for file in to_crawl]
+
+    # Use thread pool for parallel execution
+    with ThreadPoolExecutor(max_workers=n_threads) as executor:
+        futures = [executor.submit(_process_file, arg, con, lock) for arg in args]
+        results = list(tqdm((f.result() for f in futures), total=len(args)))
+
+    con.close()
+
+    # Process results
+    for file, success, error in results:
+        if success:
             with open(data_path / "seen.txt", "a") as f:
                 f.write(f"{file}\n")
-        except Exception:
+        else:
             with open(data_path / "error.txt", "a") as f:
                 f.write(f"{file}\n")
