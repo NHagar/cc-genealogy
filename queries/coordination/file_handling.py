@@ -60,7 +60,7 @@ def _process_file(args, con, lock):
         try:
             con.execute(q)
             return (file, True, None)
-        except duckdb.BinderException as e:
+        except (duckdb.BinderException, duckdb.CatalogException) as e:
             return (file, False, str(e))
 
 
