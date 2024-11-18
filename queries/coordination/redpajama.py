@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from file_handling import crawl
+from queries.file_handling import crawl
 
 urlpath = Path("./data/redpajama_urls.txt")
 querypath = Path("./queries/domains/redpajama_v2.sql")

@@ -1,4 +1,4 @@
-from file_handling import crawl, initialize_crawler
+from queries.file_handling import crawl, initialize_crawler
 
 data_path = initialize_crawler(
     "hf://datasets/uonlp/CulturaX/*/*.parquet", skip_existing=True, requires_token=True
