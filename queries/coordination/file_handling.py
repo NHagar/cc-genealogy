@@ -57,9 +57,11 @@ def _process_file(args, con, lock):
     q = f"CREATE TABLE a{fname} AS ({query})"
 
     with lock:
-        con.execute(q)
-
-    return (file, True, None)
+        try:
+            con.execute(q)
+            return (file, True, None)
+        except duckdb.BinderException as e:
+            return (file, False, str(e))
 
 
 def crawl(
