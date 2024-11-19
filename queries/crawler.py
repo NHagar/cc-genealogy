@@ -100,3 +100,9 @@ class Crawler:
             else:
                 with open(self.error_path, "a") as f:
                     f.write(f"{file}\n")
+
+
+# TODO: Handle pattern -> dataset mapping
+# TODO: Parallelize crawling
+# TODO: Set up for URL crawl
+# TODO: Clean up repo
