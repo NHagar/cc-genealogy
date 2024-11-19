@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from queries.file_handling import crawl, initialize_crawler
+from queries.crawler import crawl, initialize_crawler
 
 query_path = Path("queries/domains")
 
