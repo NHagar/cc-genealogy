@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from queries.file_handling import crawl
+from queries.crawler import crawl
 
 urlpath = Path("./data/dolma_urls.txt")
 querypath = Path("./queries/domains/dolma.sql")
