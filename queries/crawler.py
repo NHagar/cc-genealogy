@@ -178,7 +178,3 @@ class Crawler:
 
         # Wait for result handler to finish
         result_handler.join()
-
-
-# TODO: Set up for URL crawl
-# TODO: Clean up repo
