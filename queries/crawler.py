@@ -1,4 +1,6 @@
+import concurrent.futures
 import os
+import threading
 from pathlib import Path
 from typing import Dict, List
 
@@ -23,6 +25,7 @@ class Crawler:
         self.seen_path = self.data_path / "seen.csv"
         self.error_path = self.data_path / "error.csv"
         self.output_path = self.data_path / "output.csv"
+        self.lock = threading.Lock()
 
     def initialize_crawler(self) -> bool:
         """Set up crawler file structure"""
@@ -65,23 +68,45 @@ class Crawler:
             df = pd.DataFrame({"dataset": dataset, "file": files})
             df.to_csv(self.to_crawl_path, index=False, mode="a", header=False)
 
-    def _log_result(self, dataset, file, data):
-        """Helper function to log results to files"""
-        if data:
-            # Append to seen.csv
-            pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
-                self.seen_path, mode="a", header=False, index=False
-            )
+    def process_file(self, row):
+        file = row["file"]
+        dataset = row["dataset"]
+        con = duckdb.connect(":memory:")
 
-            # Append to output.csv
-            pd.DataFrame(
-                {"dataset": [dataset] * len(data), "url": [row[0] for row in data]}
-            ).to_csv(self.output_path, mode="a", header=False, index=False)
+        if file.endswith(".parquet"):
+            query = self.query_template_parquet.format(fpath=file)
+            try:
+                data = con.execute(query).fetchall()
+            except duckdb.BinderException:
+                data = []
         else:
-            # Append to error.csv
-            pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
-                self.error_path, mode="a", header=False, index=False
-            )
+            query = self.query_template_json_var1.format(fpath=file)
+            try:
+                data = con.execute(query).fetchall()
+            except duckdb.BinderException:
+                query = self.query_template_json_var2.format(fpath=file)
+                try:
+                    data = con.execute(query).fetchall()
+                except duckdb.BinderException:
+                    data = []
+
+        con.close()
+
+        with self.lock:
+            if data:
+                # Append to seen.csv
+                pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
+                    self.seen_path, mode="a", header=False, index=False
+                )
+                # Append to output.csv
+                pd.DataFrame(
+                    {"dataset": [dataset] * len(data), "url": [row[0] for row in data]}
+                ).to_csv(self.output_path, mode="a", header=False, index=False)
+            else:
+                # Append to error.csv
+                pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
+                    self.error_path, mode="a", header=False, index=False
+                )
 
     def crawl(self, crawl_errors=False):
         """Crawl files"""
@@ -110,41 +135,5 @@ class Crawler:
                 ["dataset", "file"]
             ]
 
-        con = duckdb.connect(":memory:")
-
-        for _, row in to_crawl_df.iterrows():
-            file = row["file"]
-            dataset = row["dataset"]
-
-            if file.endswith(".parquet"):
-                query = self.query_template_parquet.format(fpath=file)
-                try:
-                    data = con.execute(query).fetchall()
-                except duckdb.BinderException:
-                    data = []
-            else:
-                query = self.query_template_json_var1.format(fpath=file)
-                try:
-                    data = con.execute(query).fetchall()
-                except duckdb.BinderException:
-                    query = self.query_template_json_var2.format(fpath=file)
-                    try:
-                        data = con.execute(query).fetchall()
-                    except duckdb.BinderException:
-                        data = []
-
-            if data:
-                # Append to seen.csv
-                pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
-                    self.seen_path, mode="a", header=False, index=False
-                )
-
-                # Append to output.csv
-                pd.DataFrame(
-                    {"dataset": [dataset] * len(data), "url": [row[0] for row in data]}
-                ).to_csv(self.output_path, mode="a", header=False, index=False)
-            else:
-                # Append to error.csv
-                pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
-                    self.error_path, mode="a", header=False, index=False
-                )
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(self.process_file, [row for _, row in to_crawl_df.iterrows()])
