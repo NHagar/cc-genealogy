@@ -3,7 +3,7 @@ import os
 from functools import partial
 from pathlib import Path
 from queue import Empty
-from typing import Dict
+from typing import Dict, List
 
 import duckdb
 import pandas as pd
@@ -27,8 +27,12 @@ class Crawler:
         self.error_path = self.data_path / "error.csv"
         self.output_path = self.data_path / "output.csv"
 
-    def initialize_crawler(self):
+    def initialize_crawler(self) -> bool:
         """Set up crawler file structure"""
+        if self.data_path.exists():
+            print(f"Crawler for {self.crawl_name} already initialized, skipping...")
+            return False
+
         self.data_path.mkdir(parents=True, exist_ok=True)
 
         # Create empty to_crawl.csv with columns
@@ -45,6 +49,8 @@ class Crawler:
         # Create empty output.csv with columns
         pd.DataFrame(columns=["dataset", "url"]).to_csv(self.output_path, index=False)
 
+        return True
+
     def populate_hf(self, patterns: Dict[str, str]):
         """Populate data from Hugging Face datasets"""
         load_dotenv()
@@ -56,7 +62,7 @@ class Crawler:
             df = pd.DataFrame({"dataset": dataset, "file": files})
             df.to_csv(self.to_crawl_path, index=False, mode="a", header=False)
 
-    def populate_other(self, data: Dict[str, str]):
+    def populate_other(self, data: Dict[str, List[str]]):
         """Populate data from other sources"""
         for dataset, files in data.items():
             df = pd.DataFrame({"dataset": dataset, "file": files})
