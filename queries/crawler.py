@@ -1,5 +1,8 @@
+import multiprocessing as mp
 import os
+from functools import partial
 from pathlib import Path
+from queue import Empty
 from typing import Dict
 
 import duckdb
@@ -59,8 +62,69 @@ class Crawler:
             df = pd.DataFrame({"dataset": dataset, "file": files})
             df.to_csv(self.to_crawl_path, index=False, mode="a", header=False)
 
-    def crawl(self, crawl_errors=False):
-        """Crawl files"""
+    def _log_result(self, dataset, file, data):
+        """Helper function to log results to files"""
+        if data:
+            # Append to seen.csv
+            pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
+                self.seen_path, mode="a", header=False, index=False
+            )
+
+            # Append to output.csv
+            pd.DataFrame(
+                {"dataset": [dataset] * len(data), "url": [row[0] for row in data]}
+            ).to_csv(self.output_path, mode="a", header=False, index=False)
+        else:
+            # Append to error.csv
+            pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
+                self.error_path, mode="a", header=False, index=False
+            )
+
+    def _process_file_with_queue(self, row, queue):
+        """Process a file and put results in queue"""
+        con = duckdb.connect(":memory:")
+        dataset, file, data = self._process_file(row, con)
+        queue.put((dataset, file, data))
+
+    def _result_handler(self, queue, total_files):
+        """Process results from queue as they arrive"""
+        processed = 0
+        while processed < total_files:
+            try:
+                dataset, file, data = queue.get(timeout=1)
+                self._log_result(dataset, file, data)
+                processed += 1
+                if processed % 100 == 0:  # Progress update every 100 files
+                    print(f"Processed {processed}/{total_files} files")
+            except Empty:
+                continue
+
+    def _process_file(self, row, con):
+        """Helper function to process a single file"""
+        file = row["file"]
+        dataset = row["dataset"]
+
+        if file.endswith(".parquet"):
+            query = self.query_template_parquet.format(fpath=file)
+            try:
+                data = con.execute(query).fetchall()
+            except duckdb.BinderException:
+                data = []
+        else:
+            query = self.query_template_json_var1.format(fpath=file)
+            try:
+                data = con.execute(query).fetchall()
+            except duckdb.BinderException:
+                query = self.query_template_json_var2.format(fpath=file)
+                try:
+                    data = con.execute(query).fetchall()
+                except duckdb.BinderException:
+                    data = []
+
+        return dataset, file, data
+
+    def crawl(self, crawl_errors=False, n_processes=None):
+        """Crawl files in parallel with real-time logging"""
         # Read CSVs using pandas
         to_crawl_df = pd.read_csv(self.to_crawl_path)
         seen_df = pd.read_csv(self.seen_path)
@@ -86,46 +150,29 @@ class Crawler:
                 ["dataset", "file"]
             ]
 
-        con = duckdb.connect(":memory:")
+        if n_processes is None:
+            n_processes = mp.cpu_count() - 1
 
-        for _, row in to_crawl_df.iterrows():
-            file = row["file"]
-            dataset = row["dataset"]
+        # Create a queue for results
+        result_queue = mp.Queue()
 
-            if file.endswith(".parquet"):
-                query = self.query_template_parquet.format(fpath=file)
-                try:
-                    data = con.execute(query).fetchall()
-                except duckdb.BinderException:
-                    data = []
-            else:
-                query = self.query_template_json_var1.format(fpath=file)
-                try:
-                    data = con.execute(query).fetchall()
-                except duckdb.BinderException:
-                    query = self.query_template_json_var2.format(fpath=file)
-                    try:
-                        data = con.execute(query).fetchall()
-                    except duckdb.BinderException:
-                        data = []
+        # Start the result handler process
+        total_files = len(to_crawl_df)
+        result_handler = mp.Process(
+            target=self._result_handler, args=(result_queue, total_files)
+        )
+        result_handler.start()
 
-            if data:
-                # Append to seen.csv
-                pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
-                    self.seen_path, mode="a", header=False, index=False
-                )
+        # Create a pool of workers for processing files
+        with mp.Pool(processes=n_processes) as pool:
+            pool.map(
+                partial(self._process_file_with_queue, queue=result_queue),
+                [row for _, row in to_crawl_df.iterrows()],
+            )
 
-                # Append to output.csv
-                pd.DataFrame(
-                    {"dataset": [dataset] * len(data), "url": [row[0] for row in data]}
-                ).to_csv(self.output_path, mode="a", header=False, index=False)
-            else:
-                # Append to error.csv
-                pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
-                    self.error_path, mode="a", header=False, index=False
-                )
+        # Wait for result handler to finish
+        result_handler.join()
 
 
-# TODO: Parallelize crawling
 # TODO: Set up for URL crawl
 # TODO: Clean up repo
