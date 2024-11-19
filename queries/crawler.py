@@ -47,7 +47,7 @@ class Crawler:
         load_dotenv()
         token = os.getenv("HF_TOKEN")
         fs = HfFileSystem(token=token)
-        for dataset, pattern in patterns:
+        for dataset, pattern in patterns.items():
             files = fs.glob(pattern)
             files = [f"hf://{file}" for file in files]
             df = pd.DataFrame({"dataset": dataset, "file": files})
