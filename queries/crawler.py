@@ -72,6 +72,9 @@ class Crawler:
         file = row["file"]
         dataset = row["dataset"]
         con = duckdb.connect(":memory:")
+        load_dotenv()
+        token = os.getenv("HF_TOKEN")
+        con.execute(f"CREATE SECRET hf_token (TYPE HUGGINGFACE, TOKEN '{token}');")
 
         if file.endswith(".parquet"):
             query = self.query_template_parquet.format(fpath=file)
