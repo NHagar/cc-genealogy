@@ -24,7 +24,9 @@ class Crawler:
         self.to_crawl_path = self.data_path / "to_crawl.csv"
         self.seen_path = self.data_path / "seen.csv"
         self.error_path = self.data_path / "error.csv"
-        self.output_path = self.data_path / "output.csv"
+        self.output_path = (
+            self.data_path / "output"
+        )  # Changed from output.csv to output directory
         self.lock = threading.Lock()
 
     def initialize_crawler(self) -> bool:
@@ -34,6 +36,7 @@ class Crawler:
             return False
 
         self.data_path.mkdir(parents=True, exist_ok=True)
+        self.output_path.mkdir(parents=True, exist_ok=True)  # Create output directory
 
         # Create empty to_crawl.csv with columns
         pd.DataFrame(columns=["dataset", "file"]).to_csv(
@@ -45,9 +48,6 @@ class Crawler:
 
         # Create empty error.csv with columns
         pd.DataFrame(columns=["dataset", "file"]).to_csv(self.error_path, index=False)
-
-        # Create empty output.csv with columns
-        pd.DataFrame(columns=["dataset", "url"]).to_csv(self.output_path, index=False)
 
         return True
 
@@ -101,10 +101,14 @@ class Crawler:
                 pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
                     self.seen_path, mode="a", header=False, index=False
                 )
-                # Append to output.csv
-                pd.DataFrame(
+                # Write to partitioned parquet
+                output_df = pd.DataFrame(
                     {"dataset": [dataset] * len(data), "url": [row[0] for row in data]}
-                ).to_csv(self.output_path, mode="a", header=False, index=False)
+                )
+                partition_path = self.output_path / f"dataset={dataset}"
+                partition_path.mkdir(exist_ok=True)
+                output_file = partition_path / f"{Path(file).stem}.parquet"
+                output_df.to_parquet(output_file, index=False, compression="brotli")
             else:
                 # Append to error.csv
                 pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
