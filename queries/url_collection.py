@@ -39,4 +39,4 @@ if needs_populated:
 
 # Run the crawler
 print("Running crawler...")
-# url_crawler.crawl()
+url_crawler.crawl()
