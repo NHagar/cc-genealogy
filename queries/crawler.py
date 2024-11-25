@@ -57,6 +57,7 @@ class Crawler:
         token = os.getenv("HF_TOKEN")
         fs = HfFileSystem(token=token)
         for dataset, pattern in patterns.items():
+            print(f"Populating {dataset}...")
             files = fs.glob(pattern)
             files = [f"hf://{file}" for file in files]
             df = pd.DataFrame({"dataset": dataset, "file": files})
@@ -65,6 +66,7 @@ class Crawler:
     def populate_other(self, data: Dict[str, List[str]]):
         """Populate data from other sources"""
         for dataset, files in data.items():
+            print(f"Populating {dataset}...")
             df = pd.DataFrame({"dataset": dataset, "file": files})
             df.to_csv(self.to_crawl_path, index=False, mode="a", header=False)
 
