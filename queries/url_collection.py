@@ -1,4 +1,12 @@
+import os
+
 from crawler import Crawler
+from dotenv import load_dotenv
+from huggingface_hub import login
+
+load_dotenv()
+
+login(token=os.getenv("HF_TOKEN"))
 
 patterns_hf = {
     "c4_en": "hf://datasets/allenai/c4/en/*.json.gz",
