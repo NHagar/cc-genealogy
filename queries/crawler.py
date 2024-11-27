@@ -121,6 +121,7 @@ class Crawler:
                 pd.DataFrame({"dataset": [dataset], "file": [file]}).to_csv(
                     self.error_path, mode="a", header=False, index=False
                 )
+            print(f"Processed {file}")
 
     def crawl(self, crawl_errors=False):
         """Crawl files"""
