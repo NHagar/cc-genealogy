@@ -1,4 +1,5 @@
 import concurrent.futures
+import hashlib
 import os
 import threading
 from pathlib import Path
@@ -109,7 +110,11 @@ class Crawler:
                 )
                 partition_path = self.output_path / f"dataset={dataset}"
                 partition_path.mkdir(exist_ok=True)
-                output_file = partition_path / f"{Path(file).stem}.parquet"
+
+                # Create unique filename using hash
+                file_hash = hashlib.md5(file.encode()).hexdigest()[:8]
+                output_file = partition_path / f"{Path(file).stem}_{file_hash}.parquet"
+
                 output_df.to_parquet(output_file, index=False, compression="brotli")
             else:
                 # Append to error.csv
