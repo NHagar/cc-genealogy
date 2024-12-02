@@ -40,7 +40,7 @@ def combine_parquet_files(directory: str, max_size_gb: float = 1.0) -> None:
                 [pd.read_parquet(f) for f in current_chunk], ignore_index=True
             )
             output_path = os.path.join(directory, f"combined_{output_counter}.parquet")
-            combined_df.to_parquet(output_path, index=False)
+            combined_df.to_parquet(output_path, index=False, compression="brotli")
 
             # Reset for next chunk
             current_chunk = []
