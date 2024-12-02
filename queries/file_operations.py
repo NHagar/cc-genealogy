@@ -16,8 +16,11 @@ def combine_parquet_files(directory: str, max_size_gb: float = 1.0) -> None:
     # Convert GB to bytes for comparison
     max_size_bytes = max_size_gb * 1024 * 1024 * 1024
 
-    # Get all parquet files in directory
+    # Get all parquet files in directory that don't have a combined_* prefix
     parquet_files = glob.glob(os.path.join(directory, "*.parquet"))
+    parquet_files = [
+        f for f in parquet_files if not os.path.basename(f).startswith("combined_")
+    ]
 
     if not parquet_files:
         print(f"No parquet files found in {directory}")
