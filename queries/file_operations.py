@@ -5,7 +5,7 @@ import pandas as pd
 from datasets import load_dataset
 
 
-def combine_parquet_files(directory: str, max_size_gb: float) -> None:
+def combine_parquet_files(directory: str, max_size_gb: float = 1.0) -> None:
     """
     Combines parquet files in a directory into consolidated files of specified maximum size.
 
