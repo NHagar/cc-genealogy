@@ -16,6 +16,6 @@ if __name__ == "__main__":
     upload_directory_to_hf(
         directory,
         f"nhagar/{args.dataset}_urls",
-        token=os.getenv("HF_TOKEN"),
+        token=os.getenv("HF_TOKEN_WRITE"),
         private=True,
     )
