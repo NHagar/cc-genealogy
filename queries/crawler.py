@@ -72,7 +72,6 @@ class Crawler:
             df.to_csv(self.to_crawl_path, index=False, mode="a", header=False)
 
     def process_file(self, row):
-        print(f"Processing {row['file']}...")
         file = row["file"]
         dataset = row["dataset"]
         con = duckdb.connect(":memory:")
