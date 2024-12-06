@@ -15,7 +15,7 @@ class Crawler:
     def __init__(self, crawl_name: str):
         self.crawl_name = crawl_name
 
-        self.query_template_parquet = "SELECT url FROM {fpath}"
+        self.query_template_parquet = "SELECT url FROM '{fpath}' "
         self.query_template_json_var1 = "SELECT url FROM READ_JSON('{fpath}')"
         self.query_template_json_var2 = (
             "SELECT metadata.url AS url FROM READ_JSON('{fpath}')"
