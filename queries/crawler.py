@@ -123,12 +123,17 @@ class Crawler:
                 )
             print(f"Processed {file}")
 
-    def crawl(self, crawl_errors=False):
+    def crawl(self, crawl_errors=False, target_dataset=None):
         """Crawl files"""
         # Read CSVs using pandas
         to_crawl_df = pd.read_csv(self.to_crawl_path)
         seen_df = pd.read_csv(self.seen_path)
         error_df = pd.read_csv(self.error_path)
+
+        if target_dataset is not None:
+            to_crawl_df = to_crawl_df[to_crawl_df["dataset"] == target_dataset]
+            seen_df = seen_df[seen_df["dataset"] == target_dataset]
+            error_df = error_df[error_df["dataset"] == target_dataset]
 
         # Filter files to crawl
         if not crawl_errors:

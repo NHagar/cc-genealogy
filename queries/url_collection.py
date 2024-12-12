@@ -1,3 +1,4 @@
+import argparse
 import os
 
 from crawler import Crawler
@@ -5,6 +6,14 @@ from dotenv import load_dotenv
 from huggingface_hub import login
 
 load_dotenv()
+
+# Add argument parsing
+parser = argparse.ArgumentParser(description="URL collection script")
+parser.add_argument("--crawl_errors", action="store_true", help="Crawl error files")
+parser.add_argument(
+    "--target_dataset", type=str, default=None, help="Target specific dataset"
+)
+args = parser.parse_args()
 
 login(token=os.getenv("HF_TOKEN"))
 
@@ -37,6 +46,6 @@ if needs_populated:
     url_crawler.populate_hf(patterns_hf)
     url_crawler.populate_other(data_other)
 
-# Run the crawler
+# Run the crawler with command line arguments
 print("Running crawler...")
-url_crawler.crawl()
+url_crawler.crawl(crawl_errors=args.crawl_errors, target_dataset=args.target_dataset)
