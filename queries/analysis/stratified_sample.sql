@@ -8,7 +8,7 @@ COPY (WITH buckets AS (
       WHEN count BETWEEN 101 AND 1000 THEN '101-1000'
       ELSE '1000+'
     END AS count_bucket
-  FROM $1
+  FROM 'c4_en_urls_domains.csv'
 ),
 random_samples AS (
   SELECT 
@@ -26,4 +26,4 @@ SELECT
   count,
   count_bucket
 FROM random_samples
-WHERE rn <= 10) TO $2;
+WHERE rn <= 100) TO 'c4_en_urls_sample.csv';
