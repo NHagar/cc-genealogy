@@ -1,11 +1,11 @@
 COPY (WITH buckets AS (
   SELECT 
     domain,
-    count,
+    freq,
     CASE 
-      WHEN count BETWEEN 1 AND 10 THEN '1-10'
-      WHEN count BETWEEN 11 AND 100 THEN '11-100'
-      WHEN count BETWEEN 101 AND 1000 THEN '101-1000'
+      WHEN freq BETWEEN 1 AND 10 THEN '1-10'
+      WHEN freq BETWEEN 11 AND 100 THEN '11-100'
+      WHEN freq BETWEEN 101 AND 1000 THEN '101-1000'
       ELSE '1000+'
     END AS count_bucket
   FROM 'c4_en_urls_domains.csv'
@@ -13,7 +13,7 @@ COPY (WITH buckets AS (
 random_samples AS (
   SELECT 
     domain,
-    count,
+    freq,
     count_bucket,
     ROW_NUMBER() OVER (
       PARTITION BY count_bucket 
@@ -23,7 +23,7 @@ random_samples AS (
 )
 SELECT 
   domain,
-  count,
+  freq,
   count_bucket
 FROM random_samples
 WHERE rn <= 100) TO 'c4_en_urls_sample.csv';
