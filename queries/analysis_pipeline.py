@@ -52,7 +52,7 @@ def init_and_run_crawler(name, query):
 init_and_run_crawler("toplevel_counts", "SELECT COUNT(*) AS total_rows FROM '{fpath}'")
 init_and_run_crawler(
     "domain_counts",
-    "SELECT domain, COUNT(*) AS total_rows FROM '{fpath}' GROUP BY domain",
+    "SELECT split_part(url, '/', 3) as domain, COUNT(*) as freq FROM read_parquet('{fpath}') GROUP BY domain",
 )
 init_and_run_crawler(
     "case_studies", "SELECT url FROM '{fpath}' WHERE CONTAINS(url, 'nytimes.com')"
