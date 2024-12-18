@@ -64,6 +64,11 @@ get_sql_query_path() {
 data_pattern=$(get_dataset_pattern "$dataset")
 sql_query_path=$(get_sql_query_path "$analysis_step")
 
+# Special handling for sample analysis
+if [ "$analysis_step" = "sample" ]; then
+    data_pattern="data/results/$dataset/domains.csv"
+fi
+
 # Verify dataset pattern exists
 if [ -z "$data_pattern" ]; then
     echo "Error: Unknown dataset '$dataset'"
