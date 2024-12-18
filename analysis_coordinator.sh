@@ -3,22 +3,22 @@
 # Define list of directories to check
 directories=(
     "data/results/c4_en"
-    "data/results/cultura"
-    "data/results/falcon"
-    "data/results/fineweb"
-    "data/results/fineweb_edu"
-    "data/results/madlad_cleaned"
-    "data/results/zyda_2"
-    "data/results/dclm"
-    "data/results/dolma"
+    # "data/results/cultura"
+    # "data/results/falcon"
+    # "data/results/fineweb"
+    # "data/results/fineweb_edu"
+    # "data/results/madlad_cleaned"
+    # "data/results/zyda_2"
+    # "data/results/dclm"
+    # "data/results/dolma"
 )
 
 # Define required files to check in each directory
 required_files=(
     "topline.csv"
-    "domains.csv"
-    "sample.csv"
-    "casestudies.csv"
+    # "domains.csv"
+    # "sample.csv"
+    # "casestudies.csv"
 )
 
 # Loop through directories
