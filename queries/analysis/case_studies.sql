@@ -2,7 +2,7 @@ COPY (
     SELECT 
         url 
     FROM 
-        read_parquet('hf://datasets/nhagar/c4_en_urls/data/*.parquet') 
+        read_parquet('DATASET_PATTERN') 
     WHERE 
         CONTAINS(url, 'nytimes.com') LIMIT 5) 
-TO 'c4_en_urls_casestudies.csv';
+TO 'OUTPUT_PATH';

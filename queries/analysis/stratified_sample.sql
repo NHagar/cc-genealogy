@@ -8,7 +8,7 @@ COPY (WITH buckets AS (
       WHEN freq BETWEEN 101 AND 1000 THEN '101-1000'
       ELSE '1000+'
     END AS count_bucket
-  FROM 'c4_en_urls_domains.csv'
+  FROM 'DATASET_PATTERN'
 ),
 random_samples AS (
   SELECT 
@@ -26,4 +26,4 @@ SELECT
   freq,
   count_bucket
 FROM random_samples
-WHERE rn <= 100) TO 'c4_en_urls_sample.csv';
+WHERE rn <= 100) TO 'OUTPUT_PATH';
