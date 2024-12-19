@@ -5,66 +5,6 @@ import pandas as pd
 from datasets import load_dataset
 
 
-def combine_parquet_files(directory: str, max_size_gb: float = 3.0) -> None:
-    """
-    Combines parquet files in a directory into consolidated files of specified maximum size.
-
-    Args:
-        directory (str): Path to directory containing parquet files
-        max_size_gb (float): Maximum size of output files in gigabytes
-    """
-    # Convert GB to bytes for comparison
-    max_size_bytes = max_size_gb * 1024 * 1024 * 1024
-
-    # Get all parquet files in directory that don't have a combined_* prefix
-    parquet_files = glob.glob(os.path.join(directory, "*.parquet"))
-    parquet_files = [
-        f for f in parquet_files if not os.path.basename(f).startswith("combined_")
-    ]
-
-    if not parquet_files:
-        print(f"No parquet files found in {directory}")
-        return
-
-    current_chunk = []
-    current_size = 0
-    output_counter = 1
-
-    for file_path in parquet_files:
-        file_size = os.path.getsize(file_path)
-
-        # If adding this file would exceed max size, write current chunk
-        if current_size + file_size > max_size_bytes and current_chunk:
-            # Combine and write current chunk
-            combined_df = pd.concat(
-                [pd.read_parquet(f) for f in current_chunk], ignore_index=True
-            )
-            output_path = os.path.join(directory, f"combined_{output_counter}.parquet")
-            combined_df.to_parquet(output_path, index=False, compression="brotli")
-
-            # Reset for next chunk
-            current_chunk = []
-            current_size = 0
-            output_counter += 1
-
-        current_chunk.append(file_path)
-        current_size += file_size
-
-    # Write remaining files if any
-    if current_chunk:
-        combined_df = pd.concat(
-            [pd.read_parquet(f) for f in current_chunk], ignore_index=True
-        )
-        output_path = os.path.join(directory, f"combined_{output_counter}.parquet")
-        combined_df.to_parquet(output_path, index=False, compression="brotli")
-
-    # Remove original files
-    for file_path in parquet_files:
-        os.remove(file_path)
-
-    print(f"Successfully combined files into {output_counter} chunks")
-
-
 def upload_directory_to_hf(
     directory: str, dataset_name: str, token: str, private: bool = False
 ) -> None:
@@ -90,3 +30,31 @@ def upload_directory_to_hf(
     dataset.push_to_hub(dataset_name, token=token, private=private)
 
     print(f"Successfully uploaded dataset as {dataset_name}")
+
+
+def upload_file_to_hf(
+    file_path: str,
+    dataset_name: str,
+    token: str,
+    convert_csv_to_parquet: bool = True,
+    private: bool = False,
+) -> None:
+    """
+    Uploads a single file as a HuggingFace dataset.
+
+    Args:
+        file_path (str): Path to file (parquet or csv)
+        dataset_name (str): Name to give the dataset on HuggingFace
+        token (str): HuggingFace API token
+        convert_csv_to_parquet (bool): Whether to convert CSV to parquet before upload
+        private (bool): Whether to make the dataset private
+    """
+    if convert_csv_to_parquet and file_path.endswith(".csv"):
+        df = pd.read_csv(file_path)
+        parquet_path = file_path.replace(".csv", ".parquet")
+        df.to_parquet(parquet_path, index=False, compression="brotli")
+        file_path = parquet_path
+
+    dataset = load_dataset("parquet", data_files=file_path)
+    dataset.push_to_hub(dataset_name, token=token, private=private)
+    print(f"Successfully uploaded {file_path} as {dataset_name}")

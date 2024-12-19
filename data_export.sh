@@ -13,4 +13,4 @@ module load mamba
 source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
-python -u ./queries/condense_and_upload.py --dataset cultura
+python -u ./queries/upload_to_hf.py --dataset cultura
