@@ -6,7 +6,11 @@ from datasets import load_dataset
 
 
 def upload_directory_to_hf(
-    directory: str, dataset_name: str, token: str, private: bool = False
+    directory: str,
+    dataset_name: str,
+    token: str,
+    private: bool = False,
+    use_scratch_cache: bool = False,
 ) -> None:
     """
     Uploads a directory of parquet files as a HuggingFace dataset.
@@ -15,6 +19,8 @@ def upload_directory_to_hf(
         directory (str): Path to directory containing parquet files
         dataset_name (str): Name to give the dataset on HuggingFace
         token (str, optional): HuggingFace API token. Defaults to None.
+        private (bool, optional): Whether to make the dataset private. Defaults to False.
+        use_scratch_cache (bool, optional): Whether to use the scratch dir as a cache. Defaults to False.
     """
 
     # list all parquet files in directory
@@ -25,7 +31,12 @@ def upload_directory_to_hf(
         return
 
     # Convert to HuggingFace dataset
-    dataset = load_dataset("parquet", data_files=pq_files)
+    if use_scratch_cache:
+        dataset = load_dataset(
+            "parquet", data_files=pq_files, cache_dir="/scratch/nrh146"
+        )
+    else:
+        dataset = load_dataset("parquet", data_files=pq_files)
 
     dataset.push_to_hub(dataset_name, token=token, private=private)
 
