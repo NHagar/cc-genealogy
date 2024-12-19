@@ -9,6 +9,7 @@ load_dotenv()
 parser = ArgumentParser()
 parser.add_argument("--dataset", type=str, required=True)
 parser.add_argument("--is_file", action="store_true")
+parser.add_argument("--scratch", action="store_true")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -24,7 +25,10 @@ if __name__ == "__main__":
         )
 
     else:
-        directory = f"./data/urls/output/dataset={args.dataset}"
+        if args.scratch:
+            directory = f"/scratch/nrh146/dataset={args.dataset}"
+        else:
+            directory = f"./data/urls/output/dataset={args.dataset}"
         upload_directory_to_hf(
             directory,
             f"nhagar/{args.dataset}_urls",
