@@ -28,8 +28,8 @@ get_dataset_pattern() {
         "c4_en")
             echo "hf://datasets/nhagar/c4_en_urls/data/*.parquet"
             ;;
-        "dataset2")
-            echo "data/raw/dataset2/*.csv"
+        "falcon")
+            echo "hf://datasets/nhagar/falcon_urls/data/*.parquet"
             ;;
         "dataset3")
             echo "data/processed/dataset3/*.tsv"
