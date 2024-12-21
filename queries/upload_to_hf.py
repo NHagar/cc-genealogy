@@ -33,6 +33,6 @@ if __name__ == "__main__":
             directory,
             f"nhagar/{args.dataset}_urls",
             token=os.getenv("HF_TOKEN_WRITE"),
-            private=True,
+            private=False,
             use_scratch_cache=args.scratch,
         )
