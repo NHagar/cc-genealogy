@@ -13,4 +13,4 @@ module load mamba
 source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
-python -u ./queries/url_collection.py
+python -u ./queries/url_collection.py --use_scratch --target_dataset fineweb
