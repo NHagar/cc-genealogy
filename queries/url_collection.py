@@ -10,6 +10,7 @@ load_dotenv()
 # Add argument parsing
 parser = argparse.ArgumentParser(description="URL collection script")
 parser.add_argument("--crawl_errors", action="store_true", help="Crawl error files")
+parser.add_argument("--use_scratch", action="store_true", help="Use scratch space")
 parser.add_argument(
     "--target_dataset", type=str, default=None, help="Target specific dataset"
 )
@@ -36,7 +37,7 @@ with open("./data/dolma_urls.txt", "r") as f:
     data_other = {"dolma": [i.strip() for i in f.readlines()]}
 
 
-url_crawler = Crawler("urls")
+url_crawler = Crawler("urls", use_scratch=args.use_scratch)
 
 # Initialize the crawler
 print("Initializing crawler...")

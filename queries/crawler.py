@@ -12,7 +12,7 @@ from huggingface_hub import HfFileSystem
 
 
 class Crawler:
-    def __init__(self, crawl_name: str):
+    def __init__(self, crawl_name: str, use_scratch: bool = False):
         self.crawl_name = crawl_name
 
         self.query_template_parquet = "SELECT url FROM '{fpath}' "
@@ -25,9 +25,10 @@ class Crawler:
         self.to_crawl_path = self.data_path / "to_crawl.csv"
         self.seen_path = self.data_path / "seen.csv"
         self.error_path = self.data_path / "error.csv"
-        self.output_path = (
-            self.data_path / "output"
-        )  # Changed from output.csv to output directory
+        if use_scratch:
+            self.output_path = Path("/scratch/nrh146")
+        else:
+            self.output_path = self.data_path / "output"
         self.lock = threading.Lock()
 
     def initialize_crawler(self) -> bool:
