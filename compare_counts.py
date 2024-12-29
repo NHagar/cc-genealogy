@@ -5,6 +5,7 @@ import duckdb
 
 parser = ArgumentParser()
 parser.add_argument("--dataset")
+parser.add_argument("--use_scratch", action="store_true", help="Use scratch space")
 
 con = duckdb.connect(database=":memory:")
 
@@ -19,7 +20,10 @@ if __name__ == "__main__":
     if record_count is None:
         record_count = (0,)
 
-    collected_path = Path(f"data/urls/output/dataset={dataset}")
+    if args.use_scratch:
+        collected_path = Path(f"/scratch/nrh146/dataset={dataset}")
+    else:
+        collected_path = Path(f"data/urls/output/dataset={dataset}")
     collected_count = len(list(collected_path.glob("*.parquet")))
 
     with open(f"data/urls/{dataset}_count.txt", "w") as f:
