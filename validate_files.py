@@ -1,11 +1,19 @@
 import argparse
+import hashlib
 import logging
 import os
+from pathlib import Path
 
+import pandas as pd
 import pyarrow.parquet as pq
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def hash_file(file_path):
+    file_hash = hashlib.md5(file_path.encode()).hexdigest()[:8]
+    return f"{Path(file_path).stem}_{file_hash}.parquet"
 
 
 def validate_directory(directory_path):
@@ -53,6 +61,21 @@ def validate_directory(directory_path):
         logger.warning("Invalid parquet files found:")
         for file in invalid_parquet_files:
             logger.warning(f"- {file}")
+        logger.info("Updating seen list and removing invalid files...")
+        # remove invalid files
+        for file in invalid_parquet_files:
+            os.remove(os.path.join(directory_path, file))
+        logger.info("Invalid files removed")
+        # update seen list
+        seen = pd.read_csv("data/urls/seen.csv")
+        seen["file_encoded"] = seen["file"].apply(hash_file)
+        seen_updated = seen[~seen["file_encoded"].isin(invalid_parquet_files)]
+        if len(seen) != len(seen_updated):
+            logger.info("Updating seen list...")
+            seen_updated.to_csv("data/urls/seen.csv", index=False)
+            logger.info("Seen list updated")
+        else:
+            logger.info("No changes in seen list")
 
     if not non_parquet_files and not invalid_parquet_files:
         logger.info("All files are valid parquet files")
