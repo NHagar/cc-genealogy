@@ -38,7 +38,11 @@ def upload_directory_to_hf(
     else:
         dataset = load_dataset("parquet", data_files=pq_files)
 
-    dataset.push_to_hub(dataset_name, token=token, private=private)
+    try:
+        dataset.push_to_hub(dataset_name, token=token, private=private)
+    except Exception as e:
+        print(f"Error uploading dataset: {str(e)}")
+        return
 
     print(f"Successfully uploaded dataset as {dataset_name}")
 
