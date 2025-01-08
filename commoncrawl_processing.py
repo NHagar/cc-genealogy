@@ -2,11 +2,14 @@ import os
 import time
 
 import boto3
-from datasets import load_dataset
+from datasets import Dataset
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class AthenaToHuggingFace:
-    def __init__(self, database, region_name="us-east-1"):
+    def __init__(self, database, s3_output_location, region_name="us-east-1"):
         """
         Initialize the Athena client and set up basic configurations.
 
@@ -15,8 +18,31 @@ class AthenaToHuggingFace:
             s3_output_location (str): S3 location for Athena query results
             region_name (str): AWS region name
         """
-        self.athena_client = boto3.client("athena", region_name=region_name)
+
+        # Get AWS credentials
+        aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+
+        if not aws_access_key or not aws_secret_key:
+            raise ValueError("AWS credentials not found in environment variables")
+
+        # Initialize AWS clients with explicit credentials
+        self.athena_client = boto3.client(
+            "athena",
+            region_name=region_name,
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+        )
+
+        self.s3_client = boto3.client(
+            "s3",
+            region_name=region_name,
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+        )
+
         self.database = database
+        self.s3_output_location = s3_output_location
 
     def execute_query(self, query):
         """
@@ -28,69 +54,65 @@ class AthenaToHuggingFace:
         Returns:
             str: Query execution ID
         """
-        response = self.athena_client.start_query_execution(
-            QueryString=query,
-            QueryExecutionContext={"Database": self.database},
-        )
-
-        query_execution_id = response["QueryExecutionId"]
-
-        # Wait for query to complete
-        while True:
-            response = self.athena_client.get_query_execution(
-                QueryExecutionId=query_execution_id
+        try:
+            response = self.athena_client.start_query_execution(
+                QueryString=query,
+                QueryExecutionContext={"Database": self.database},
+                ResultConfiguration={"OutputLocation": self.s3_output_location},
             )
-            state = response["QueryExecution"]["Status"]["State"]
 
-            if state in ["SUCCEEDED", "FAILED", "CANCELLED"]:
-                break
+            query_execution_id = response["QueryExecutionId"]
 
-            time.sleep(5)
+            # Wait for query to complete
+            while True:
+                response = self.athena_client.get_query_execution(
+                    QueryExecutionId=query_execution_id
+                )
+                state = response["QueryExecution"]["Status"]["State"]
 
-        if state != "SUCCEEDED":
-            raise Exception(f"Query failed with state: {state}")
+                if state in ["SUCCEEDED", "FAILED", "CANCELLED"]:
+                    break
 
-        return query_execution_id
+                time.sleep(5)
 
-    def get_query_results(self, query_execution_id):
-        """
-        Get query results directly from Athena.
+            if state != "SUCCEEDED":
+                error_info = response["QueryExecution"]["Status"].get(
+                    "StateChangeReason", "No error message provided"
+                )
+                raise Exception(
+                    f"Query failed with state: {state}. Error: {error_info}"
+                )
 
-        Args:
-            query_execution_id (str): Athena query execution ID
+            return query_execution_id
 
-        Returns:
-            list: List of rows with column headers
-        """
-        paginator = self.athena_client.get_paginator("get_query_results")
-        rows = []
-
-        for page in paginator.paginate(QueryExecutionId=query_execution_id):
-            for row in page["ResultSet"]["Rows"]:
-                rows.append([field.get("VarCharValue", "") for field in row["Data"]])
-
-        return rows
+        except Exception as e:
+            print(f"Error executing query: {str(e)}")
+            raise
 
     def download_results(self, query_execution_id, local_path):
         """
-        Download query results directly to local path.
+        Download query results from S3 to local path.
 
         Args:
             query_execution_id (str): Athena query execution ID
             local_path (str): Local path to save the results
         """
-        import pandas as pd
+        try:
+            response = self.athena_client.get_query_execution(
+                QueryExecutionId=query_execution_id
+            )
 
-        # Get results directly from Athena
-        rows = self.get_query_results(query_execution_id)
+            s3_path = response["QueryExecution"]["ResultConfiguration"][
+                "OutputLocation"
+            ]
+            bucket = s3_path.split("/")[2]
+            key = "/".join(s3_path.split("/")[3:])
 
-        # First row contains column headers
-        headers = rows[0]
-        data = rows[1:]
+            self.s3_client.download_file(bucket, key, local_path)
 
-        # Convert to DataFrame and save as parquet
-        df = pd.DataFrame(data, columns=headers)
-        df.to_parquet(local_path)
+        except Exception as e:
+            print(f"Error downloading results: {str(e)}")
+            raise
 
     def process_partitions(self, base_query, partitions, output_dir, token):
         """
@@ -100,39 +122,54 @@ class AthenaToHuggingFace:
             base_query (str): Base SQL query template with {partition} placeholder
             partitions (list): List of partition values
             output_dir (str): Local directory for temporary files
+            hf_repo_id (str): Hugging Face repository ID
             token (str): Hugging Face API token
         """
         os.makedirs(output_dir, exist_ok=True)
-
         for partition in partitions:
-            # Generate partition-specific query
-            query = base_query.format(partition=partition)
+            try:
+                print(f"Processing partition: {partition}")
 
-            # Execute query
-            query_id = self.execute_query(query)
+                # Generate partition-specific query
+                query = base_query.format(partition=partition)
 
-            # Download results
-            local_path = f"{output_dir}/{partition}.parquet"
-            self.download_results(query_id, local_path)
+                # Execute query
+                print("Executing Athena query...")
+                query_id = self.execute_query(query)
 
-            # Upload to Hugging Face
-            dataset = load_dataset("parquet", data_files=local_path)
-            dataset.push_to_hub(f"nhagar/{partition}_urls", token=token)
-            print(f"Uploaded {partition} to Hugging Face")
+                # Download results
+                print("Downloading results...")
+                local_path = f"{output_dir}/{partition}.parquet"
+                self.download_results(query_id, local_path)
 
-            # Clean up local file
-            os.remove(local_path)
+                # Upload to Hugging Face
+                print("Uploading to Hugging Face...")
+                dataset = Dataset.from_parquet(local_path)
+                dataset.push_to_hub(repo_id=f"nhagar/CC-{partition}_urls", token=token)
+                print(f"Uploaded {partition} to Hugging Face")
+
+                # Clean up local file
+                print("Cleaning up local file...")
+                os.remove(local_path)
+
+                print(f"Successfully processed partition: {partition}")
+
+            except Exception as e:
+                print(f"Error processing partition {partition}: {str(e)}")
+                # Continue with next partition even if current one fails
+                continue
 
 
 # Example usage
 if __name__ == "__main__":
     # Configuration
     DATABASE = "ccindex"
+    S3_OUTPUT_LOCATION = "s3://your-bucket/athena-output/"
     HF_TOKEN = os.getenv("HF_TOKEN_WRITE")
     OUTPUT_DIR = "data/commoncrawl"
 
     # Initialize processor
-    processor = AthenaToHuggingFace(DATABASE)
+    processor = AthenaToHuggingFace(DATABASE, S3_OUTPUT_LOCATION)
 
     # Example query template and partitions
     base_query = """
@@ -146,7 +183,6 @@ if __name__ == "__main__":
     GROUP BY 1, 2
     """
 
-    # TODO: Define from files
     partitions = ["2024-01", "2024-02", "2024-03"]
 
     # Process all partitions
