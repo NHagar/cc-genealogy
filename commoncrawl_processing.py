@@ -108,7 +108,11 @@ class AthenaToHuggingFace:
             bucket = s3_path.split("/")[2]
             key = "/".join(s3_path.split("/")[3:])
 
-            self.s3_client.download_file(bucket, key, local_path)
+            self.s3_client.download_file(bucket, key, f"{local_path}.csv")
+            # Convert to parquet
+            dataset = Dataset.from_csv(f"{local_path}.csv")
+            dataset.to_parquet(local_path)
+            os.remove(f"{local_path}.csv")
 
         except Exception as e:
             print(f"Error downloading results: {str(e)}")
@@ -139,7 +143,7 @@ class AthenaToHuggingFace:
 
                 # Download results
                 print("Downloading results...")
-                local_path = f"{output_dir}/{partition}.parquet"
+                local_path = f"{output_dir}/{partition}"
                 self.download_results(query_id, local_path)
 
                 # Upload to Hugging Face
