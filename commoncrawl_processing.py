@@ -158,6 +158,10 @@ class AthenaToHuggingFace:
 
                 print(f"Successfully processed partition: {partition}")
 
+                # Append partition to seen list
+                with open("data/commoncrawl/partitions_seen.txt", "a") as f:
+                    f.write(partition + "\n")
+
             except Exception as e:
                 print(f"Error processing partition {partition}: {str(e)}")
                 # Continue with next partition even if current one fails
@@ -187,8 +191,13 @@ if __name__ == "__main__":
     GROUP BY 1, 2
     """
 
-    # TODO: Define from files
-    partitions = ["2024-01", "2024-02", "2024-03"]
+    with open("data/commoncrawl/partitions_to_crawl.txt", "r") as f:
+        tocrawl = f.read().splitlines()
+
+    with open("data/commoncrawl/partitions_seen.txt", "r") as f:
+        seen = f.read().splitlines()
+
+    partitions = list(set(tocrawl) - set(seen))
 
     # Process all partitions
     processor.process_partitions(
