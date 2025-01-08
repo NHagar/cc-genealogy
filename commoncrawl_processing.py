@@ -164,7 +164,7 @@ class AthenaToHuggingFace:
 if __name__ == "__main__":
     # Configuration
     DATABASE = "ccindex"
-    S3_OUTPUT_LOCATION = "s3://your-bucket/athena-output/"
+    S3_OUTPUT_LOCATION = os.getenv("ATHENA_OUTPUT_LOCATION")
     HF_TOKEN = os.getenv("HF_TOKEN_WRITE")
     OUTPUT_DIR = "data/commoncrawl"
 
@@ -183,6 +183,7 @@ if __name__ == "__main__":
     GROUP BY 1, 2
     """
 
+    # TODO: Define from files
     partitions = ["2024-01", "2024-02", "2024-03"]
 
     # Process all partitions
