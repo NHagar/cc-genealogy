@@ -149,7 +149,7 @@ class AthenaToHuggingFace:
                 # Upload to Hugging Face
                 print("Uploading to Hugging Face...")
                 dataset = Dataset.from_parquet(local_path)
-                dataset.push_to_hub(repo_id=f"nhagar/CC-{partition}_urls", token=token)
+                dataset.push_to_hub(repo_id=f"nhagar/{partition}_urls", token=token)
                 print(f"Uploaded {partition} to Hugging Face")
 
                 # Clean up local file
