@@ -95,3 +95,90 @@ def upload_file_to_hf(
     )
 
     print(f"Successfully uploaded {file_path} as {dataset_name}")
+
+
+def combine_parquet_files(
+    directory: str,
+    target_size_mb: int = 2000,
+    output_dir: str = "combined",
+) -> None:
+    """
+    Combines parquet files in a directory up to a specified size.
+
+    Args:
+        directory (str): Path to directory containing parquet files
+        target_size_mb (int): Target size for combined files in MB
+        output_dir (str): Name of subdirectory for combined files
+    """
+    parquet_files = glob.glob(os.path.join(directory, "*.parquet"))
+    if not parquet_files:
+        print(f"No parquet files found in {directory}")
+        return
+
+    # Create output directory
+    output_path = os.path.join(directory, output_dir)
+    os.makedirs(output_path, exist_ok=True)
+
+    # Load existing tracking data if it exists
+    tracking_file = os.path.join(output_path, "file_tracking.csv")
+    tracking = {}
+    processed_files = set()
+    if os.path.exists(tracking_file):
+        tracking_df = pd.read_csv(tracking_file, index_col=0)
+        for combined_file, source_files in tracking_df.iterrows():
+            tracking[combined_file] = eval(
+                source_files.iloc[0]
+            )  # Convert string list back to list
+            processed_files.update(tracking[combined_file])
+
+    # Filter out already processed files
+    parquet_files = [
+        f for f in parquet_files if os.path.basename(f) not in processed_files
+    ]
+    if not parquet_files:
+        print("All files have already been processed")
+        return
+
+    print(f"Processing {len(parquet_files)} new files...")
+    current_batch = []
+    current_size = 0
+    batch_num = len(tracking) + 1
+
+    for i, file in enumerate(parquet_files, 1):
+        file_size = os.path.getsize(file) / (1024 * 1024)  # Convert to MB
+
+        if current_size + file_size > target_size_mb and current_batch:
+            # Combine and save current batch
+            combined_df = pd.concat([pd.read_parquet(f) for f in current_batch])
+            output_file = os.path.join(output_path, f"combined_{batch_num}.parquet")
+            combined_df.to_parquet(output_file, index=False)
+
+            # Update tracking and save immediately
+            tracking[f"combined_{batch_num}.parquet"] = [
+                os.path.basename(f) for f in current_batch
+            ]
+            pd.DataFrame.from_dict(tracking, orient="index").to_csv(tracking_file)
+
+            print(
+                f"Progress: {i}/{len(parquet_files)} files processed. Saved batch {batch_num}"
+            )
+
+            # Reset for next batch
+            current_batch = []
+            current_size = 0
+            batch_num += 1
+
+        current_batch.append(file)
+        current_size += file_size
+
+    # Handle remaining files
+    if current_batch:
+        combined_df = pd.concat([pd.read_parquet(f) for f in current_batch])
+        output_file = os.path.join(output_path, f"combined_{batch_num}.parquet")
+        combined_df.to_parquet(output_file, index=False)
+        tracking[f"combined_{batch_num}.parquet"] = [
+            os.path.basename(f) for f in current_batch
+        ]
+        pd.DataFrame.from_dict(tracking, orient="index").to_csv(tracking_file)
+
+    print(f"Combined files saved in {output_path}")
