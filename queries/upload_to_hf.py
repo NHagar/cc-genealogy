@@ -9,6 +9,7 @@ load_dotenv()
 parser = ArgumentParser()
 parser.add_argument("--dataset", type=str, required=True)
 parser.add_argument("--scratch", action="store_true")
+parser.add_argument("--large", action="store_true")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -25,4 +26,5 @@ if __name__ == "__main__":
         directory,
         f"nhagar/{args.dataset}_urls",
         token=token,
+        is_large=args.large,
     )
