@@ -4,8 +4,6 @@ import os
 import pandas as pd
 from huggingface_hub import HfApi
 
-api = HfApi()
-
 
 def upload_directory_to_hf(
     directory: str,
@@ -22,6 +20,7 @@ def upload_directory_to_hf(
         token (str, optional): HuggingFace API token. Defaults to None.
         is_large (bool, optional): Whether the dataset is large. Defaults to True.
     """
+    api = HfApi(token=token)
 
     # check for parquet files in directory
     if not glob.glob(os.path.join(directory, "*.parquet")):
@@ -30,23 +29,26 @@ def upload_directory_to_hf(
 
     if not is_large:
         api.create_repo(
-            f"nhagar/{dataset_name}",
-            token=token,
+            dataset_name,
             repo_type="dataset",
             private=False,
         )
 
         api.upload_folder(
-            repo_id=f"nhagar/{dataset_name}",
+            repo_id=dataset_name,
             folder_path=directory,
             path_in_repo="data",
-            token=token,
             repo_type="dataset",
             allow_patterns=["*.parquet"],
         )
     else:
+        # move all parquet files to a subdirectory
+        os.makedirs(os.path.join(directory, "data"), exist_ok=True)
+        for file in glob.glob(os.path.join(directory, "*.parquet")):
+            os.rename(file, os.path.join(directory, "data", os.path.basename(file)))
+
         api.upload_large_folder(
-            repo_id=f"nhagar/{dataset_name}",
+            repo_id=dataset_name,
             folder_path=directory,
             repo_type="dataset",
             allow_patterns=["*.parquet"],
@@ -71,6 +73,8 @@ def upload_file_to_hf(
         convert_csv_to_parquet (bool): Whether to convert CSV to parquet before upload
         private (bool): Whether to make the dataset private
     """
+    api = HfApi(token=token)
+
     if convert_csv_to_parquet and file_path.endswith(".csv"):
         df = pd.read_csv(file_path)
         parquet_path = file_path.replace(".csv", ".parquet")
@@ -78,8 +82,7 @@ def upload_file_to_hf(
         file_path = parquet_path
 
     api.create_repo(
-        f"nhagar/{dataset_name}",
-        token=token,
+        dataset_name,
         repo_type="dataset",
         private=False,
     )
@@ -87,8 +90,7 @@ def upload_file_to_hf(
     api.upload_file(
         path_or_fileobj=file_path,
         path_in_repo="data",
-        repo_id=f"nhagar/{dataset_name}",
-        token=token,
+        repo_id=dataset_name,
         repo_type="dataset",
     )
 
