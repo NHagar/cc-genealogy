@@ -12,7 +12,6 @@ def upload_directory_to_hf(
     dataset_name: str,
     token: str,
     is_large: bool = True,
-    private: bool = False,
 ) -> None:
     """
     Uploads a directory of parquet files as a HuggingFace dataset.
@@ -22,7 +21,6 @@ def upload_directory_to_hf(
         dataset_name (str): Name to give the dataset on HuggingFace
         token (str, optional): HuggingFace API token. Defaults to None.
         is_large (bool, optional): Whether the dataset is large. Defaults to True.
-        private (bool, optional): Whether to make the dataset private. Defaults to False.
     """
 
     # check for parquet files in directory
@@ -35,7 +33,7 @@ def upload_directory_to_hf(
             f"nhagar/{dataset_name}",
             token=token,
             repo_type="dataset",
-            private=private,
+            private=False,
         )
 
         api.upload_folder(
@@ -62,7 +60,6 @@ def upload_file_to_hf(
     dataset_name: str,
     token: str,
     convert_csv_to_parquet: bool = True,
-    private: bool = False,
 ) -> None:
     """
     Uploads a single file as a HuggingFace dataset.
@@ -80,6 +77,19 @@ def upload_file_to_hf(
         df.to_parquet(parquet_path, index=False, compression="brotli")
         file_path = parquet_path
 
-    dataset = load_dataset("parquet", data_files=file_path)
-    dataset.push_to_hub(dataset_name, token=token, private=private)
+    api.create_repo(
+        f"nhagar/{dataset_name}",
+        token=token,
+        repo_type="dataset",
+        private=False,
+    )
+
+    api.upload_file(
+        path_or_fileobj=file_path,
+        path_in_repo="data",
+        repo_id=f"nhagar/{dataset_name}",
+        token=token,
+        repo_type="dataset",
+    )
+
     print(f"Successfully uploaded {file_path} as {dataset_name}")
