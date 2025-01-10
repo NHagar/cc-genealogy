@@ -2,7 +2,7 @@ import os
 from argparse import ArgumentParser
 
 from dotenv import load_dotenv
-from file_operations import upload_directory_to_hf
+from file_operations import combine_parquet_files, upload_directory_to_hf
 
 load_dotenv()
 
@@ -22,6 +22,9 @@ if __name__ == "__main__":
         directory = f"/scratch/nrh146/dataset={args.dataset}"
     else:
         directory = f"./data/urls/output/dataset={args.dataset}"
+
+    combine_parquet_files(directory)
+
     upload_directory_to_hf(
         directory,
         f"nhagar/{args.dataset}_urls",
