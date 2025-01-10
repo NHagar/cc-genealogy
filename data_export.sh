@@ -13,4 +13,4 @@ module load mamba
 source ~/.bashrc
 mamba activate /home/nrh146/.conda/envs/cc
 
-python -u ./queries/upload_to_hf.py --dataset fineweb --scratch --large
+python ./queries/upload_to_hf.py --dataset fineweb --scratch --large
