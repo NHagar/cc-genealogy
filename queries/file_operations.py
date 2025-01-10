@@ -42,11 +42,6 @@ def upload_directory_to_hf(
             allow_patterns=["*.parquet"],
         )
     else:
-        # move all parquet files to a subdirectory
-        os.makedirs(os.path.join(directory, "data"), exist_ok=True)
-        for file in glob.glob(os.path.join(directory, "*.parquet")):
-            os.rename(file, os.path.join(directory, "data", os.path.basename(file)))
-
         api.upload_large_folder(
             repo_id=dataset_name,
             folder_path=directory,
