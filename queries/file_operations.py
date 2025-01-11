@@ -22,12 +22,12 @@ def upload_directory_to_hf(
     """
     api = HfApi(token=token)
 
-    # check for parquet files in directory
-    if not glob.glob(os.path.join(directory, "*.parquet")):
-        print(f"No parquet files found in {directory}")
-        return
-
     if not is_large:
+        # check for parquet files in directory
+        if not glob.glob(os.path.join(directory, "*.parquet")):
+            print(f"No parquet files found in {directory}")
+            return
+
         api.create_repo(
             dataset_name,
             repo_type="dataset",
