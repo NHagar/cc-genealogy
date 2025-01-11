@@ -10,6 +10,7 @@ parser = ArgumentParser()
 parser.add_argument("--dataset", type=str, required=True)
 parser.add_argument("--scratch", action="store_true")
 parser.add_argument("--large", action="store_true")
+parser.add_argument("--combine", action="store_true")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -23,7 +24,8 @@ if __name__ == "__main__":
     else:
         directory = f"./data/urls/output/dataset={args.dataset}"
 
-    combine_parquet_files(directory)
+    if args.combine:
+        combine_parquet_files(directory)
 
     upload_directory_to_hf(
         directory,
