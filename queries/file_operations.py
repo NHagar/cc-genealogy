@@ -130,7 +130,7 @@ def combine_parquet_files(
             # Combine and save current batch
             combined_df = pd.concat([pd.read_parquet(f) for f in current_batch])
             output_file = os.path.join(output_path, f"combined_{batch_num}.parquet")
-            combined_df.to_parquet(output_file, index=False)
+            combined_df.to_parquet(output_file, index=False, compression="brotli")
 
             # Move processed files to source directory
             for source_file in current_batch:
