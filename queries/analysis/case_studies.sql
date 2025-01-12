@@ -4,5 +4,5 @@ COPY (
     FROM 
         read_parquet('DATASET_PATTERN') 
     WHERE 
-        CONTAINS(url, 'nytimes.com') LIMIT 5) 
+        CONTAINS(url, 'nytimes.com')) 
 TO 'OUTPUT_PATH';

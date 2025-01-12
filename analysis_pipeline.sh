@@ -31,8 +31,8 @@ get_dataset_pattern() {
         "falcon")
             echo "hf://datasets/nhagar/falcon_urls/data/*.parquet"
             ;;
-        "dataset3")
-            echo "data/processed/dataset3/*.tsv"
+        "cultura")
+            echo "hf://datasets/nhagar/cultura_urls/data/*.parquet"
             ;;
         *)
             echo ""
