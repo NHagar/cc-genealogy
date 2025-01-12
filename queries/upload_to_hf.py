@@ -11,6 +11,7 @@ parser.add_argument("--dataset", type=str, required=True)
 parser.add_argument("--scratch", action="store_true")
 parser.add_argument("--large", action="store_true")
 parser.add_argument("--combine", action="store_true")
+parser.add_argument("--export", action="store_true")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -27,9 +28,10 @@ if __name__ == "__main__":
     if args.combine:
         combine_parquet_files(directory)
 
-    upload_directory_to_hf(
-        directory,
-        f"nhagar/{args.dataset}_urls",
-        token=token,
-        is_large=args.large,
-    )
+    if args.export:
+        upload_directory_to_hf(
+            directory,
+            f"nhagar/{args.dataset}_urls",
+            token=token,
+            is_large=args.large,
+        )
