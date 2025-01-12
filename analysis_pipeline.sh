@@ -96,4 +96,4 @@ echo "Executing SQL query:"
 echo "$sql_query"
 
 # Execute the processed query
-echo "$sql_query" | duckdb
+echo "$sql_query" | ./duckdb
