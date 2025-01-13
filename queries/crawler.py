@@ -178,7 +178,9 @@ class Crawler:
             executor.map(self.process_file, [row for _, row in to_crawl_df.iterrows()])
 
 
-def initialize_and_run_crawler(crawl_errors: bool, target_dataset: str):
+def initialize_and_run_crawler(
+    crawl_errors: bool = False, target_dataset: str | None = None
+):
     login(token=os.getenv("HF_TOKEN"))
     url_crawler = Crawler("urls", use_scratch=True)
 
