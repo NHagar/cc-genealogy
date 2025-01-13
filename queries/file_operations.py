@@ -1,8 +1,51 @@
 import glob
 import os
+from pathlib import Path
+from typing import List
 
 import pandas as pd
 from huggingface_hub import HfApi
+
+
+def initialize_tracking(datasets: List | None = None, steps: List | None = None):
+    if datasets is None:
+        datasets = [
+            "c4_en",
+            "cultura",
+            "falcon",
+            "fineweb",
+            "fineweb_edu",
+            "madlad_cleaned",
+            "zyda_2",
+            "dclm",
+            "dolma",
+        ]
+
+    if steps is None:
+        steps = [
+            "url_collection",
+            "topline",
+            "domains",
+            "case_studies",
+            "stratified_sample",
+            "hf_upload",
+        ]
+
+    pipeline_tracking_path = Path("data/urls/pipeline_tracking.csv")
+    if pipeline_tracking_path.exists():
+        print("Pipeline tracking file already exists")
+        return
+
+    df = pd.DataFrame(columns=["dataset", "step", "is_complete"])
+    for dataset in datasets:
+        for step in steps:
+            df = df.append(
+                {"dataset": dataset, "step": step, "is_complete": False},
+                ignore_index=True,
+            )
+
+    df.to_csv(pipeline_tracking_path, index=False)
+    print("Pipeline tracking file created")
 
 
 def upload_directory_to_hf(
