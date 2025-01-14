@@ -1,0 +1,1 @@
+SELECT url FROM './c4/data/*.parquet' WHERE url LIKE '%nytimes.com%';
