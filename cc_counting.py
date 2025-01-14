@@ -55,4 +55,6 @@ with open("cc_totals.txt", "w") as f:
     f.write(str(totals))
 
 with open("cc_domains.txt", "w") as f:
+    # ensure all items are strings
+    domain_set = list(map(str, domain_set))
     f.write("\n".join(domain_set))
