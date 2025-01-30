@@ -2,6 +2,7 @@ import os
 from argparse import ArgumentParser
 
 import dask.dataframe as dd
+from dask.distributed import Client, progress
 from dotenv import load_dotenv
 
 from src.io.collection_patterns import PATTERNS_HF, get_dolma_urls
@@ -21,6 +22,10 @@ storage_options = {
 
 
 if __name__ == "__main__":
+    # Set up Dask client with dashboard
+    client = Client(processes=True)
+    print(f"Dashboard link: {client.dashboard_link}")
+
     args = argparser.parse_args()
 
     if args.dataset == "dolma":
@@ -46,7 +51,9 @@ if __name__ == "__main__":
     df = df.dropna()
     df["dataset"] = args.dataset
 
-    df = df.compute()
+    # Show progress bar during computation
+    with progress.ProgressBar():
+        df = df.compute()
 
     create_hf_repo(df, f"nhagar/{args.dataset}_urls", token=os.getenv("HF_TOKEN_WRITE"))
 
