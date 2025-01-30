@@ -13,6 +13,12 @@ load_dotenv()
 argparser = ArgumentParser()
 argparser.add_argument("--dataset", type=str, help="Dataset to crawl")
 
+storage_options = {
+    "retries": 5,  # Total attempts (initial + 4 retries)
+    "retry_delay": 10,  # Seconds between retries
+    "timeout": 60,  # Timeout per request (optional)
+}
+
 
 if __name__ == "__main__":
     args = argparser.parse_args()
@@ -27,9 +33,13 @@ if __name__ == "__main__":
     print(f"Reading {args.dataset} URLs from {input_pattern}")
 
     if input_type == "parquet":
-        df = dd.read_parquet(input_pattern, columns=["url"])
+        df = dd.read_parquet(
+            input_pattern, columns=["url"], storage_options=storage_options
+        )
     else:
-        df = dd.read_json(input_pattern, compression="gzip")
+        df = dd.read_json(
+            input_pattern, compression="gzip", storage_options=storage_options
+        )
         df = df["url"]
 
     df["domain"] = df["url"].map(safe_get_domain, meta=(None, "str"))
