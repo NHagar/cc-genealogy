@@ -1,60 +1,49 @@
 import os
-from argparse import ArgumentParser
 
 import dask.dataframe as dd
-from dask.distributed import Client, progress
+import tldextract
+from dask.distributed import Client
 from dotenv import load_dotenv
-
-from src.io.collection_patterns import PATTERNS_HF, get_dolma_urls
-from src.io.file_operations import create_hf_repo
-from src.transformations.hf_url_processing import safe_get_domain
+from huggingface_hub import HfApi
 
 load_dotenv()
 
-argparser = ArgumentParser()
-argparser.add_argument("--dataset", type=str, help="Dataset to crawl")
 
-storage_options = {
-    "retries": 5,  # Total attempts (initial + 4 retries)
-    "retry_delay": 10,  # Seconds between retries
-    "timeout": 60,  # Timeout per request (optional)
-}
+def get_tld(url):
+    return (
+        tldextract.extract(url).domain + "." + tldextract.extract(url).suffix
+        if url
+        else None
+    )
 
 
 if __name__ == "__main__":
-    # Set up Dask client with dashboard
-    client = Client(processes=True)
-    print(f"Dashboard link: {client.dashboard_link}")
+    # Start a Dask cluster
+    client = Client()
+    print(client.dashboard_link)
 
-    args = argparser.parse_args()
+    # Create HF client
+    api = HfApi(token=os.getenv("HF_TOKEN_WRITE"))
+    files = api.list_repo_files(
+        "Zyphra/Zyda-2",
+        repo_type="dataset",
+    )
+    print("files collected")
+    paths = [
+        f"hf://datasets/Zyphra/Zyda-2/{file}"
+        for file in files
+        if file.endswith(".parquet") and "data/" in file
+    ]
 
-    if args.dataset == "dolma":
-        input_pattern = get_dolma_urls()
-        input_type = "json"
-    else:
-        input_pattern = PATTERNS_HF[args.dataset]
-        input_type = "parquet" if ".parquet" in input_pattern else "json"
+    print("paths collected")
 
-    print(f"Reading {args.dataset} URLs from {input_pattern}")
+    # Load the data
+    data = dd.read_parquet(
+        paths[:20],
+        # "hf://datasets/Zyphra/Zyda-2/data/**/*.parquet",
+        columns=["url"],
+    )
 
-    if input_type == "parquet":
-        df = dd.read_parquet(
-            input_pattern, columns=["url"], storage_options=storage_options
-        )
-    else:
-        df = dd.read_json(
-            input_pattern, compression="gzip", storage_options=storage_options
-        )
-        df = df["url"]
+    data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
 
-    df["domain"] = df["url"].map(safe_get_domain, meta=(None, "str"))
-    df = df.dropna()
-    df["dataset"] = args.dataset
-
-    # Show progress bar during computation
-    with progress.ProgressBar():
-        df = df.compute()
-
-    create_hf_repo(df, f"nhagar/{args.dataset}_urls", token=os.getenv("HF_TOKEN_WRITE"))
-
-    print("Done!")
+    data.to_parquet("test_data_with_domain", write_index=False)
