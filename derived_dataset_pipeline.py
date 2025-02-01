@@ -28,18 +28,17 @@ if __name__ == "__main__":
         "Zyphra/Zyda-2",
         repo_type="dataset",
     )
-    print("files collected")
     paths = [
         f"hf://datasets/Zyphra/Zyda-2/{file}"
         for file in files
         if file.endswith(".parquet") and "data/" in file
     ]
 
-    print("paths collected")
+    print(f"{len(paths)} paths collected")
 
     # Load the data
     data = dd.read_parquet(
-        paths[:20],
+        paths[:1_000],
         # "hf://datasets/Zyphra/Zyda-2/data/**/*.parquet",
         columns=["url"],
     )
