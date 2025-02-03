@@ -5,6 +5,7 @@ import tldextract
 from dask.distributed import Client
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
+from tqdm import tqdm
 
 load_dotenv()
 
@@ -22,8 +23,18 @@ if __name__ == "__main__":
     client = Client()
     print(client.dashboard_link)
 
-    # Create HF client
-    api = HfApi(token=os.getenv("HF_TOKEN_WRITE"))
+    hf_token = os.getenv("HF_TOKEN_WRITE")
+    api = HfApi(token=hf_token)
+
+    hf_dataset_name = "nhagar/zyda-2_urls_test"
+
+    api.create_repo(
+        hf_dataset_name,
+        repo_type="dataset",
+        private=False,
+        exist_ok=True,
+    )
+
     files = api.list_repo_files(
         "Zyphra/Zyda-2",
         repo_type="dataset",
@@ -36,13 +47,22 @@ if __name__ == "__main__":
 
     print(f"{len(paths)} paths collected")
 
-    # Load the data
-    data = dd.read_parquet(
-        paths[:1_000],
-        # "hf://datasets/Zyphra/Zyda-2/data/**/*.parquet",
-        columns=["url"],
-    )
+    # NOTE: This batching is done to avoid overwhelming the Dask scheduler on graph creation
+    # Split paths into batches of 1000
+    batches = [paths[i : i + 1000] for i in range(0, len(paths), 1000)]
+    print(f"Split into {len(batches)} batches")
 
-    data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
+    # Process each batch
+    for i, batch in tqdm(enumerate(batches)):
+        data = dd.read_parquet(
+            batch,
+            columns=["url"],
+            aggregate_files=True,
+            blocksize="2GB",
+            # Set the name_function to avoid duplicate column names
+            name_function=lambda x: f"part_{x}_batch_{i}.parquet",
+        )
 
-    data.to_parquet("test_data_with_domain", write_index=False)
+        data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
+
+        data.to_parquet(f"hf://datasets/{hf_dataset_name}/data", write_index=False)
