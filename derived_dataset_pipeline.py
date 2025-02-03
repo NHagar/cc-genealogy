@@ -23,8 +23,8 @@ if __name__ == "__main__":
     client = Client()
     print(client.dashboard_link)
 
-    hf_token = os.getenv("HF_TOKEN_WRITE")
-    api = HfApi(token=hf_token)
+    os.environ["HF_HUB_ENABLE_TRANSFER"] = "1"
+    api = HfApi()
 
     hf_dataset_name = "nhagar/zyda-2_urls_test"
 
@@ -53,16 +53,20 @@ if __name__ == "__main__":
     print(f"Split into {len(batches)} batches")
 
     # Process each batch
-    for i, batch in tqdm(enumerate(batches)):
+    for i, batch in tqdm(enumerate(batches), total=len(batches)):
         data = dd.read_parquet(
             batch,
             columns=["url"],
             aggregate_files=True,
             blocksize="2GB",
-            # Set the name_function to avoid duplicate column names
-            name_function=lambda x: f"part_{x}_batch_{i}.parquet",
         )
 
         data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
 
-        data.to_parquet(f"hf://datasets/{hf_dataset_name}/data", write_index=False)
+        data.to_parquet(
+            f"hf://datasets/{hf_dataset_name}/data",
+            write_index=False,
+            append=False if i == 0 else True,
+            # Set the name_function to avoid duplicate column names
+            name_function=lambda x: f"part_{x}_batch_{i}.parquet",
+        )
