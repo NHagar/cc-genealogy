@@ -68,5 +68,5 @@ if __name__ == "__main__":
             write_index=False,
             append=False if i == 0 else True,
             # Set the name_function to avoid duplicate column names
-            name_function=lambda x: f"part_{x}_batch_{i}.parquet",
+            name_function=lambda x: f"batch_{i}_part_{x}.parquet",
         )
