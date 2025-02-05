@@ -18,7 +18,7 @@ def filter_c4(variant: str):
     paths = [
         f"hf://datasets/allenai/c4/{file}"
         for file in files
-        if file.endswith(".json.gz") and variant in file
+        if file.endswith(".json.gz") and f"{variant}/" in file
     ]
 
     return paths
@@ -108,23 +108,23 @@ def filter_dolma(variant: str):
 
 
 COLLECTION_ENUM = {
-    "c4_en": filter_c4("en"),
-    "c4_en_noblock": filter_c4("en.noblocklist"),
-    "c4_en_noclean": filter_c4("en.noclean"),
-    "c4_multilingual": filter_c4("multilingual"),
-    "c4_realnewslike": filter_c4("realnewslike"),
-    "cultura": filter_cultura(),
-    "falcon": filter_falcon(),
-    "fineweb": filter_fineweb("fineweb"),
-    "fineweb_edu": filter_fineweb("fineweb-edu"),
-    "dclm": filter_dclm(),
-    "zyda_2": filter_zyda_2(),
-    "madlad_1_cleaned": filter_madlad("data", "clean"),
-    "madlad_1p5_cleaned": filter_madlad("data-v1p5", "clean"),
-    "madlad_1_noisy": filter_madlad("data", "noisy"),
-    "madlad_1p5_noisy": filter_madlad("data-v1p5", "noisy"),
-    "dolma_v1": filter_dolma("v1"),
-    "dolma_v1p5": filter_dolma("v1_5"),
-    "dolma_v1p6": filter_dolma("v1_6"),
-    "dolma_v1p7": filter_dolma("v1_7"),
+    "c4_en": lambda: filter_c4("en"),
+    "c4_en_noblock": lambda: filter_c4("en.noblocklist"),
+    "c4_en_noclean": lambda: filter_c4("en.noclean"),
+    "c4_multilingual": lambda: filter_c4("multilingual"),
+    "c4_realnewslike": lambda: filter_c4("realnewslike"),
+    "cultura": filter_cultura,
+    "falcon": filter_falcon,
+    "fineweb": lambda: filter_fineweb("fineweb"),
+    "fineweb_edu": lambda: filter_fineweb("fineweb-edu"),
+    "dclm": filter_dclm,
+    "zyda_2": filter_zyda_2,
+    "madlad_1_cleaned": lambda: filter_madlad("data", "clean"),
+    "madlad_1p5_cleaned": lambda: filter_madlad("data-v1p5", "clean"),
+    "madlad_1_noisy": lambda: filter_madlad("data", "noisy"),
+    "madlad_1p5_noisy": lambda: filter_madlad("data-v1p5", "noisy"),
+    "dolma_v1": lambda: filter_dolma("v1"),
+    "dolma_v1p5": lambda: filter_dolma("v1_5"),
+    "dolma_v1p6": lambda: filter_dolma("v1_6"),
+    "dolma_v1p7": lambda: filter_dolma("v1_7"),
 }

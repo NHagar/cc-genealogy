@@ -1,8 +1,9 @@
-from urllib.parse import urlparse
+import tldextract
 
 
-def safe_get_domain(url):
-    try:
-        return urlparse(url).netloc
-    except (AttributeError, TypeError):
-        return None
+def get_tld(url):
+    return (
+        tldextract.extract(url).domain + "." + tldextract.extract(url).suffix
+        if url
+        else None
+    )
