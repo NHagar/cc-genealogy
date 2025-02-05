@@ -47,6 +47,8 @@ if __name__ == "__main__":
 
     print(f"{len(paths)} paths collected")
 
+    # TODO: Print sample of URLs for sanity check
+
     # NOTE: This batching is done to avoid overwhelming the Dask scheduler on graph creation
     # Split paths into batches of 1000
     batches = [paths[i : i + 1000] for i in range(0, len(paths), 1000)]
