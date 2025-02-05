@@ -63,6 +63,8 @@ if __name__ == "__main__":
 
         data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
 
+        data = data.repartition(npartitions=4)
+
         data.to_parquet(
             f"hf://datasets/{hf_dataset_name}/data",
             write_index=False,
