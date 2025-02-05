@@ -1,53 +1,36 @@
-import os
+from argparse import ArgumentParser
 
 import dask.dataframe as dd
-import tldextract
 from dask.distributed import Client
-from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from tqdm import tqdm
 
-load_dotenv()
+from src.io.collection_patterns import COLLECTION_ENUM
+from src.orchestration.repo_management import create_repo
+from src.transformations.hf_url_processing import get_tld
 
-
-def get_tld(url):
-    return (
-        tldextract.extract(url).domain + "." + tldextract.extract(url).suffix
-        if url
-        else None
-    )
+argparser = ArgumentParser()
+argparser.add_argument("--dataset", type=str, required=True)
 
 
 if __name__ == "__main__":
+    args = argparser.parse_args()
+
     # Start a Dask cluster
     client = Client()
     print(client.dashboard_link)
 
-    os.environ["HF_HUB_ENABLE_TRANSFER"] = "1"
-    api = HfApi()
-
-    hf_dataset_name = "nhagar/zyda-2_urls_test"
-
-    api.create_repo(
-        hf_dataset_name,
-        repo_type="dataset",
-        private=False,
-        exist_ok=True,
-    )
-
-    files = api.list_repo_files(
-        "Zyphra/Zyda-2",
-        repo_type="dataset",
-    )
-    paths = [
-        f"hf://datasets/Zyphra/Zyda-2/{file}"
-        for file in files
-        if file.endswith(".parquet") and "data/" in file
-    ]
-
+    # Get paths for collection
+    paths = COLLECTION_ENUM[args.dataset]()
     print(f"{len(paths)} paths collected")
+    print(paths[:5])
+    print(paths[-5:])
 
-    # TODO: Print sample of URLs for sanity check
+    # determine dataset type
+    dataset_type = "parquet" if ".parquet" in paths[0] else "json"
+
+    # Create repo
+    hf_dataset_name = f"nhagar/{args.dataset}_urls"
+    create_repo(hf_dataset_name)
 
     # NOTE: This batching is done to avoid overwhelming the Dask scheduler on graph creation
     # Split paths into batches of 1000
@@ -55,18 +38,30 @@ if __name__ == "__main__":
     print(f"Split into {len(batches)} batches")
 
     # Process each batch
-    for i, batch in tqdm(enumerate(batches), total=len(batches)):
-        data = dd.read_parquet(
-            batch,
-            columns=["url"],
-            aggregate_files=True,
-            blocksize="2GB",
-        )
+    for batch in tqdm(batches):
+        # Read URLs
+        if dataset_type == "parquet":
+            data = dd.read_parquet(
+                batch,
+                columns=["url"],
+                aggregate_files=True,
+                blocksize="2GB",
+            )
+        else:
+            data = dd.read_json(
+                batch,
+                blocksize="2GB",
+                compression="gzip",
+            )
+            data = data[["url"]]
 
+        # Extract domain
         data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
 
+        # Repartition to reduce concurrent writes
         data = data.repartition(npartitions=4)
 
+        # Write to repo
         data.to_parquet(
             f"hf://datasets/{hf_dataset_name}/data",
             write_index=False,
