@@ -38,7 +38,7 @@ if __name__ == "__main__":
     print(f"Split into {len(batches)} batches")
 
     # Process each batch
-    for batch in tqdm(batches):
+    for i, batch in tqdm(enumerate(batches)):
         # Read URLs
         if dataset_type == "parquet":
             data = dd.read_parquet(
