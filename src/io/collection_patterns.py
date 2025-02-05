@@ -1,5 +1,34 @@
+from huggingface_hub import HfApi
+
+
+def list_files(repo_name: str):
+    api = HfApi()
+    files = api.list_repo_files(
+        repo_name,
+        repo_type="dataset",
+    )
+
+    return list(files)
+
+
+def filter_c4(variant: str):
+    files = list_files("allenai/c4")
+
+    paths = [
+        f"hf://datasets/allenai/c4/{file}"
+        for file in files
+        if file.endswith(".json.gz") and variant in file
+    ]
+
+    return paths
+
+
 PATTERNS_HF = {
-    "c4_en": "hf://datasets/allenai/c4/en/*.json.gz",
+    "c4_en": filter_c4("en"),
+    "c4_en_noblock": filter_c4("en.noblocklist"),
+    "c4_en_noclean": filter_c4("en.noclean"),
+    "c4_multilingual": filter_c4("multilingual"),
+    "c4_realnewslike": filter_c4("realnewslike"),
     "cultura": "hf://datasets/uonlp/CulturaX/*/*.parquet",
     "falcon": "hf://datasets/tiiuae/falcon-refinedweb/data/*.parquet",
     "fineweb": "hf://datasets/HuggingFaceFW/fineweb/data/*/*.parquet",
@@ -8,9 +37,6 @@ PATTERNS_HF = {
     "zyda_2": "hf://datasets/Zyphra/Zyda-2/data/**/*.parquet",
     "dclm": "hf://datasets/mlfoundations/dclm-baseline-1.0-parquet/filtered/**/*.parquet",
     "madlad_noisy": "hf://datasets/allenai/MADLAD-400/data-v1p5/*/noisy*.jsonl.gz",
-    "c4_en_noblock": "hf://datasets/allenai/c4/en.noblocklist/*.json.gz",
-    "c4_multilingual": "hf://datasets/allenai/c4/multilingual/*.json.gz",
-    "c4_realnewslike": "hf://datasets/allenai/c4/realnewslike/*.json.gz",
 }
 
 
