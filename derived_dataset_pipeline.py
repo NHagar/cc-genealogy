@@ -50,7 +50,7 @@ if __name__ == "__main__":
         else:
             data = dd.read_json(
                 batch,
-                blocksize="2GB",
+                blocksize=None,
                 compression="gzip",
             )
             data = data[["url"]]
