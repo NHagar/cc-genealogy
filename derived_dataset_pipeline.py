@@ -1,5 +1,7 @@
+import json
 from argparse import ArgumentParser
 
+import dask.bag as db
 import dask.dataframe as dd
 from dask.distributed import Client
 from tqdm import tqdm
@@ -48,12 +50,10 @@ if __name__ == "__main__":
                 blocksize="2GB",
             )
         else:
-            data = dd.read_json(
-                batch,
-                blocksize=None,
-                compression="gzip",
+            bag = db.read_text(batch, compression="gzip").map(
+                lambda x: {"url": json.loads(x)["url"]}
             )
-            data = data[["url"]]
+            data = bag.to_dataframe(meta={"url": "object"})
 
         # Extract domain
         data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
