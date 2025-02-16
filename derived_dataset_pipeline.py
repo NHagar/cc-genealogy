@@ -1,12 +1,11 @@
-import json
 from argparse import ArgumentParser
 
-import dask.bag as db
 import dask.dataframe as dd
 from dask.distributed import Client
 from tqdm import tqdm
 
 from src.io.collection_patterns import COLLECTION_ENUM
+from src.io.file_operations import read_text_with_retry
 from src.orchestration.repo_management import create_repo
 from src.transformations.hf_url_processing import get_tld
 
@@ -50,9 +49,7 @@ if __name__ == "__main__":
                 blocksize="2GB",
             )
         else:
-            bag = db.read_text(batch, compression="gzip").map(
-                lambda x: {"url": json.loads(x)["url"]}
-            )
+            bag = read_text_with_retry(batch)
             data = bag.to_dataframe(meta={"url": "object"})
 
         # Extract domain
