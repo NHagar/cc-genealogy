@@ -7,3 +7,8 @@ def get_tld(url):
         if url
         else None
     )
+
+
+def get_tld_partitions(df):
+    df["domain"] = df["url"].apply(get_tld)
+    return df
