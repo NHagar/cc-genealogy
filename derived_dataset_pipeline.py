@@ -7,7 +7,7 @@ from tqdm import tqdm
 from src.io.collection_patterns import COLLECTION_ENUM
 from src.io.file_operations import read_text_with_retry
 from src.orchestration.repo_management import create_repo
-from src.transformations.hf_url_processing import get_tld
+from src.transformations.hf_url_processing import get_tld_partitions
 
 argparser = ArgumentParser()
 argparser.add_argument("--dataset", type=str, required=True)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     # Start a Dask cluster
-    client = Client()
+    client = Client(n_workers=16, memory_limit="8GB")
     print(client.dashboard_link)
 
     # Get paths for collection
@@ -52,11 +52,11 @@ if __name__ == "__main__":
             bag = read_text_with_retry(batch)
             data = bag.to_dataframe(meta={"url": "object"})
 
-        # Extract domain
-        data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
-
         # Repartition to reduce concurrent writes
         data = data.repartition(npartitions=4)
+
+        # Extract domain
+        data = data.map_partitions(get_tld_partitions)
 
         # Write to repo
         data.to_parquet(
