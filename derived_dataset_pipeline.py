@@ -7,7 +7,7 @@ from tqdm import tqdm
 from src.io.collection_patterns import COLLECTION_ENUM
 from src.io.file_operations import read_text_with_retry
 from src.orchestration.repo_management import create_repo
-from src.transformations.hf_url_processing import get_tld_partitions
+from src.transformations.hf_url_processing import get_tld
 
 argparser = ArgumentParser()
 argparser.add_argument("--dataset", type=str, required=True)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     # Start a Dask cluster
-    client = Client(n_workers=16, memory_limit="8GB")
+    client = Client()
     print(client.dashboard_link)
 
     # Get paths for collection
@@ -46,23 +46,20 @@ if __name__ == "__main__":
                 batch,
                 columns=["url"],
                 aggregate_files=True,
-                blocksize="2GB",
+                blocksize="512MB",
             )
         else:
             bag = read_text_with_retry(batch)
             data = bag.to_dataframe(meta={"url": "object"})
-
-        # Repartition to reduce concurrent writes
-        data = data.repartition(npartitions=4)
+            data = data.repartition(partition_size="512MB")
 
         # Extract domain
-        data = data.map_partitions(get_tld_partitions)
+        data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
 
         # Write to repo
         data.to_parquet(
             f"hf://datasets/{hf_dataset_name}/data",
             write_index=False,
             append=False if i == 0 else True,
-            # Set the name_function to avoid duplicate column names
             name_function=lambda x: f"batch_{i}_part_{x}.parquet",
         )
