@@ -48,14 +48,12 @@ if __name__ == "__main__":
                 aggregate_files=True,
                 blocksize="512MB",
             )
-            # Extract domain
-            data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
         else:
             bag = read_text_with_retry(batch)
             data = bag.to_dataframe(meta={"url": "object"})
-            # Extract domain
-            data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
-            data = data.repartition(partition_size="512MB")
+
+        # Extract domain
+        data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
 
         # Write to repo
         data.to_parquet(
