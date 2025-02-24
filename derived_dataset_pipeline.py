@@ -5,7 +5,6 @@ from dask.distributed import Client
 from tqdm import tqdm
 
 from src.io.collection_patterns import COLLECTION_ENUM
-from src.io.file_operations import read_text_with_retry
 from src.orchestration.repo_management import create_repo
 from src.transformations.hf_url_processing import get_tld
 
@@ -49,8 +48,13 @@ if __name__ == "__main__":
                 blocksize="512MB",
             )
         else:
-            bag = read_text_with_retry(batch)
-            data = bag.to_dataframe(meta={"url": "object"})
+            data = dd.read_json(
+                batch,
+                lines=True,
+                blocksize=None,
+                compression="gzip",
+            )
+            data = data[["url"]]
 
         # Extract domain
         data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))

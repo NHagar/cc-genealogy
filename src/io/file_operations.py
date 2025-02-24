@@ -30,7 +30,7 @@ def create_hf_repo(data: pd.DataFrame, dataset_name: str, token: str) -> None:
 
 @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
 def read_text_with_retry(batch):
-    bag = db.read_text(batch, compression="gzip").map(
+    bag = db.read_text(batch, compression="gzip", files_per_partition=20).map(
         lambda x: {"url": json.loads(x)["url"]}
     )
 
