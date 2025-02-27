@@ -195,7 +195,6 @@ class HFDataPipeline:
 
         for sample in streaming_dataset:
             # Only keep the URL from each sample (drop text immediately)
-            logger.info(sample)
             current_batch.append({"url": sample["url"]})
 
             # When batch is full, submit it for processing
