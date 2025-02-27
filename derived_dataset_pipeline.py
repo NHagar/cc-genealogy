@@ -315,11 +315,7 @@ class HFDataPipeline:
         )
 
         # Push to Hub
-        dataset.push_to_hub(
-            self.target_repo,
-            config_name=f"batch_{batch_index}",
-            private=True,
-        )
+        dataset.push_to_hub(self.target_repo)
 
 
 def main():
