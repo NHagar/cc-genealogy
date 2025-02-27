@@ -21,7 +21,7 @@ def main():
         help="Dataset configurations to process. Use 'all' for all available configs.",
     )
     parser.add_argument(
-        "--batch-size", type=int, default=1000, help="Batch size for processing"
+        "--batch-size", type=int, default=10_000, help="Batch size for processing"
     )
     parser.add_argument(
         "--num-proc",
