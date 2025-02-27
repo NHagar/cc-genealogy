@@ -55,10 +55,6 @@ class HFDataPipeline:
 
         self.target_repo = target_repo
 
-        # Include config name in target repo if it's not 'default'
-        if config_name != "default":
-            self.target_repo = f"{self.target_repo}_{config_name}"
-
         self.batch_size = batch_size
         self.num_proc = min(
             num_proc, os.cpu_count() or 4
