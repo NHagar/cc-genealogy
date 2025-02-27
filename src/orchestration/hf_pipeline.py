@@ -318,4 +318,7 @@ class HFDataPipeline:
         )
 
         # Push to Hub
-        dataset.push_to_hub(self.target_repo)
+        dataset.push_to_hub(
+            self.target_repo,
+            data_dir=f"batch_{batch_index}",
+        )
