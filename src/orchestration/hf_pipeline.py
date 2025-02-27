@@ -33,7 +33,7 @@ class HFDataPipeline:
         self,
         source_repo: str,
         config_name: str = "default",
-        batch_size: int = 1000,
+        batch_size: int = 10_000,
         num_proc: int = 4,
     ):
         """
