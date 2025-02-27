@@ -9,4 +9,4 @@
 
 module purge all
 
-uv run derived_dataset_pipeline.py --dataset c4_en_noblock
+uv run derived_dataset_pipeline.py --source-repo allenai/c4 --configs realnewslike --batch-size 200000 --num-proc 16
