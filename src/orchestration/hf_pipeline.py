@@ -10,7 +10,6 @@ from datasets import Dataset, Features, Value, load_dataset
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
-from src.io.collection_patterns import COLLECTION_ENUM
 from src.orchestration.repo_management import create_repo
 from src.transformations.hf_url_processing import get_tld
 
@@ -33,6 +32,7 @@ class HFDataPipeline:
     def __init__(
         self,
         source_repo: str,
+        config_name: str = "default",
         batch_size: int = 1000,
         num_proc: int = 4,
     ):
@@ -41,12 +41,18 @@ class HFDataPipeline:
 
         Args:
             source_repo: Source HuggingFace repository ID
+            config_name: Configuration name to use from the dataset
             batch_size: Number of samples to process in each batch
             num_proc: Number of processes for parallel operations
         """
         self.source_repo = source_repo
-        self.source_files = COLLECTION_ENUM[source_repo]()
+        self.config_name = config_name
         self.target_repo = f"nhagar/{source_repo}_urls"
+
+        # Include config name in target repo if it's not 'default'
+        if config_name != "default":
+            self.target_repo = f"{self.target_repo}_{config_name}"
+
         self.batch_size = batch_size
         self.num_proc = min(
             num_proc, os.cpu_count() or 4
@@ -57,6 +63,7 @@ class HFDataPipeline:
         create_repo(self.target_repo)
 
         logger.info(f"Initialized pipeline with {self.num_proc} workers")
+        logger.info(f"Using configuration '{self.config_name}'")
 
     @staticmethod
     def retry_with_exponential_backoff(func: Callable) -> Callable:
@@ -105,12 +112,13 @@ class HFDataPipeline:
         Returns:
             Iterable dataset for streaming processing
         """
-        logger.info(f"Loading dataset from {self.source_repo} in streaming mode")
+        logger.info(
+            f"Loading dataset from {self.source_repo} (config: {self.config_name}) in streaming mode"
+        )
 
-        # Only load the URL column to save memory
         dataset = load_dataset(
-            self.source_repo,
-            data_files=self.source_files,
+            path=self.source_repo,
+            name=self.config_name,
             streaming=True,
         )
 
@@ -160,6 +168,8 @@ class HFDataPipeline:
         """
         # Load the dataset in streaming mode
         streaming_dataset = self.load_dataset_streaming()
+
+        logger.info(f"Processing dataset with configuration '{self.config_name}'")
 
         # Initialize batch counter and batches list
         batch_count = 0
