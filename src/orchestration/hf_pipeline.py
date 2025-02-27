@@ -123,8 +123,9 @@ class HFDataPipeline:
         )
 
         dataset = load_dataset(
-            path=self.source_repo,
-            name=self.config_name,
+            self.source_repo,
+            self.config_name,
+            split="train",
             streaming=True,
         )
 
@@ -198,6 +199,7 @@ class HFDataPipeline:
 
         for sample in streaming_dataset:
             # Only keep the URL from each sample (drop text immediately)
+            logger.info(sample)
             current_batch.append({"url": sample["url"]})
 
             # When batch is full, submit it for processing
