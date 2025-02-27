@@ -14,7 +14,6 @@ import os
 import random
 import time
 from typing import Any, Callable, Dict, List
-from urllib.parse import urlparse
 
 import datasets
 from datasets import Dataset, Features, Value, load_dataset
@@ -23,6 +22,7 @@ from tqdm.auto import tqdm
 
 from src.io.collection_patterns import COLLECTION_ENUM
 from src.orchestration.repo_management import create_repo
+from src.transformations.hf_url_processing import get_tld
 
 # Configure logging
 logging.basicConfig(
@@ -139,18 +139,8 @@ class HFDataPipeline:
         """
         domains = []
         for url in urls:
-            try:
-                parsed_url = urlparse(url)
-                domain = parsed_url.netloc
-
-                # Remove 'www.' prefix if present
-                if domain.startswith("www."):
-                    domain = domain[4:]
-
-                domains.append(domain)
-            except Exception:
-                # Return empty string if URL parsing fails
-                domains.append("")
+            domain = get_tld(url)
+            domains.append(domain if domain is not None else "unknown")
 
         return domains
 
