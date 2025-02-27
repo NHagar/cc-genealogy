@@ -21,6 +21,8 @@ from datasets import Dataset, Features, Value, load_dataset
 from huggingface_hub import HfApi, HfFolder
 from tqdm.auto import tqdm
 
+from src.io.collection_patterns import COLLECTION_ENUM
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -56,6 +58,7 @@ class HFDataPipeline:
             hf_token: HuggingFace API token for private repositories
         """
         self.source_repo = source_repo
+        self.source_files = COLLECTION_ENUM[source_repo]()
         self.target_repo = target_repo or f"{source_repo}-processed"
         self.batch_size = batch_size
         self.num_proc = min(
@@ -120,19 +123,11 @@ class HFDataPipeline:
         logger.info(f"Loading dataset from {self.source_repo} in streaming mode")
 
         # Only load the URL column to save memory
-        column_names = ["url"]
         dataset = load_dataset(
             self.source_repo,
+            data_files=self.source_files,
             streaming=True,
-            use_auth_token=self.hf_token,
-            split="train",
-            keep_in_memory=False,
-            columns=column_names,
         )
-        # Handle different return types
-        if isinstance(dataset, dict):
-            # If a dictionary is returned with splits
-            dataset = dataset["train"]  # Default to train split
 
         return dataset
 
