@@ -13,15 +13,16 @@ import logging
 import os
 import random
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 from urllib.parse import urlparse
 
 import datasets
 from datasets import Dataset, Features, Value, load_dataset
-from huggingface_hub import HfApi, HfFolder
+from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 from src.io.collection_patterns import COLLECTION_ENUM
+from src.orchestration.repo_management import create_repo
 
 # Configure logging
 logging.basicConfig(
@@ -42,34 +43,28 @@ class HFDataPipeline:
     def __init__(
         self,
         source_repo: str,
-        target_repo: str = None,
         batch_size: int = 1000,
         num_proc: int = 4,
-        hf_token: Optional[str] = None,
     ):
         """
         Initialize the pipeline.
 
         Args:
             source_repo: Source HuggingFace repository ID
-            target_repo: Target HuggingFace repository ID for processed data
             batch_size: Number of samples to process in each batch
             num_proc: Number of processes for parallel operations
-            hf_token: HuggingFace API token for private repositories
         """
         self.source_repo = source_repo
         self.source_files = COLLECTION_ENUM[source_repo]()
-        self.target_repo = target_repo or f"{source_repo}-processed"
+        self.target_repo = f"nhagar/{source_repo}_urls"
         self.batch_size = batch_size
         self.num_proc = min(
             num_proc, os.cpu_count() or 4
         )  # Ensure we don't exceed available CPUs
-        self.hf_token = hf_token or os.environ.get("HF_TOKEN")
-        self.api = HfApi(token=self.hf_token)
+        self.api = HfApi()
 
-        # Create HF folder for token if provided
-        if self.hf_token:
-            HfFolder.save_token(self.hf_token)
+        # Create target repository if it doesn't exist
+        create_repo(self.target_repo)
 
         logger.info(f"Initialized pipeline with {self.num_proc} workers")
 
@@ -333,7 +328,6 @@ class HFDataPipeline:
         dataset.push_to_hub(
             self.target_repo,
             config_name=f"batch_{batch_index}",
-            token=self.hf_token,
             private=True,
         )
 
@@ -349,10 +343,6 @@ def main():
         "--source-repo", required=True, help="Source HuggingFace repository ID"
     )
     parser.add_argument(
-        "--target-repo",
-        help="Target HuggingFace repository ID (default: source-repo-processed)",
-    )
-    parser.add_argument(
         "--batch-size", type=int, default=1000, help="Batch size for processing"
     )
     parser.add_argument(
@@ -361,19 +351,14 @@ def main():
         default=4,
         help="Number of processes for parallel operations",
     )
-    parser.add_argument(
-        "--hf-token", help="HuggingFace API token (or set HF_TOKEN env var)"
-    )
 
     args = parser.parse_args()
 
     # Initialize pipeline
     pipeline = HFDataPipeline(
         source_repo=args.source_repo,
-        target_repo=args.target_repo,
         batch_size=args.batch_size,
         num_proc=args.num_proc,
-        hf_token=args.hf_token,
     )
 
     # Run pipeline
