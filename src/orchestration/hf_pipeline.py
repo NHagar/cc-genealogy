@@ -47,7 +47,13 @@ class HFDataPipeline:
         """
         self.source_repo = source_repo
         self.config_name = config_name
-        self.target_repo = f"nhagar/{source_repo}_urls"
+
+        if config_name == "default":
+            target_repo = f"nhagar/{source_repo.split('/')[-1]}_urls"
+        else:
+            target_repo = f"nhagar/{source_repo.split('/')[-1]}_urls_{config_name}"
+
+        self.target_repo = target_repo
 
         # Include config name in target repo if it's not 'default'
         if config_name != "default":
