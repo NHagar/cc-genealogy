@@ -6,7 +6,7 @@ import time
 from typing import Any, Callable, Dict, List
 
 import datasets
-from datasets import Dataset, Features, Value, load_dataset
+from datasets import Dataset, DownloadConfig, Features, Value, load_dataset
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
@@ -118,11 +118,14 @@ class HFDataPipeline:
             f"Loading dataset from {self.source_repo} (config: {self.config_name}) in streaming mode"
         )
 
+        dlconfig = DownloadConfig(max_retries=5)
+
         dataset = load_dataset(
             self.source_repo,
             self.config_name,
             split="train",
             streaming=True,
+            download_config=dlconfig,
         )
 
         return dataset
