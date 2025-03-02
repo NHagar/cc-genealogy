@@ -1,68 +1,64 @@
-from argparse import ArgumentParser
+import argparse
+from typing import List
 
-import dask.dataframe as dd
-from dask.distributed import Client
-from tqdm import tqdm
+from datasets import get_dataset_config_names
 
-from src.io.collection_patterns import COLLECTION_ENUM
-from src.orchestration.repo_management import create_repo
-from src.transformations.hf_url_processing import get_tld
+from src.orchestration.hf_pipeline import HFDataPipeline
 
-argparser = ArgumentParser()
-argparser.add_argument("--dataset", type=str, required=True)
+
+def main():
+    """Main entry point with example usage."""
+    parser = argparse.ArgumentParser(
+        description="Process a HuggingFace dataset with URLs"
+    )
+    parser.add_argument(
+        "--source-repo", required=True, help="Source HuggingFace repository ID"
+    )
+    parser.add_argument(
+        "--configs",
+        nargs="*",
+        default=["default"],
+        help="Dataset configurations to process. Use 'all' for all available configs.",
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=100_000, help="Batch size for processing"
+    )
+    parser.add_argument(
+        "--num-proc",
+        type=int,
+        default=6,
+        help="Number of processes for parallel operations",
+    )
+
+    args = parser.parse_args()
+
+    # Determine which configurations to process
+    configs_to_process: List[str] = []
+    if "all" in args.configs:
+        try:
+            configs_to_process = get_dataset_config_names(args.source_repo)
+            print(f"Found {len(configs_to_process)} configurations to process")
+        except Exception as e:
+            print(f"Error fetching configurations: {e}")
+            print("Falling back to 'default' configuration")
+            configs_to_process = ["default"]
+    else:
+        configs_to_process = args.configs
+
+    # Process each configuration
+    for config in configs_to_process:
+        print(f"Processing configuration: {config}")
+        # Initialize pipeline
+        pipeline = HFDataPipeline(
+            source_repo=args.source_repo,
+            config_name=config,
+            batch_size=args.batch_size,
+            num_proc=args.num_proc,
+        )
+
+        # Run pipeline
+        pipeline.process_dataset()
 
 
 if __name__ == "__main__":
-    args = argparser.parse_args()
-
-    # Start a Dask cluster
-    client = Client()
-    print(client.dashboard_link)
-
-    # Get paths for collection
-    paths = COLLECTION_ENUM[args.dataset]()
-    print(f"{len(paths)} paths collected")
-    print(paths[:5])
-    print(paths[-5:])
-
-    # determine dataset type
-    dataset_type = "parquet" if ".parquet" in paths[0] else "json"
-
-    # Create repo
-    hf_dataset_name = f"nhagar/{args.dataset}_urls"
-    create_repo(hf_dataset_name)
-
-    # NOTE: This batching is done to avoid overwhelming the Dask scheduler on graph creation
-    # Split paths into batches of 1000
-    batches = [paths[i : i + 1000] for i in range(0, len(paths), 1000)]
-    print(f"Split into {len(batches)} batches")
-
-    # Process each batch
-    for i, batch in tqdm(enumerate(batches)):
-        # Read URLs
-        if dataset_type == "parquet":
-            data = dd.read_parquet(
-                batch,
-                columns=["url"],
-                aggregate_files=True,
-                blocksize="512MB",
-            )
-        else:
-            data = dd.read_json(
-                batch,
-                lines=True,
-                blocksize=None,
-                compression="gzip",
-            )
-            data = data[["url"]]
-
-        # Extract domain
-        data["domain"] = data["url"].apply(get_tld, meta=("url", "object"))
-
-        # Write to repo
-        data.to_parquet(
-            f"hf://datasets/{hf_dataset_name}/data",
-            write_index=False,
-            append=False if i == 0 else True,
-            name_function=lambda x: f"batch_{i}_part_{x}.parquet",
-        )
+    main()
