@@ -118,7 +118,9 @@ class HFDataPipeline:
             f"Loading dataset from {self.source_repo} (config: {self.config_name}) in streaming mode"
         )
 
-        dlconfig = DownloadConfig(max_retries=5)
+        dlconfig = DownloadConfig(
+            max_retries=10,
+        )
 
         dataset = load_dataset(
             self.source_repo,
