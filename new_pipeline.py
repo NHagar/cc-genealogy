@@ -18,19 +18,19 @@ def process_data(examples):
     return examples
 
 
-# Start timing
-start_time = time.time()
-print("Starting pipeline...")
-
 ds = load_dataset("allenai/c4", "en", split="train", streaming=True)
 ds = ds.remove_columns(["text", "timestamp"])
-ds = ds.map(process_data, batched=True, batch_size=1_000)
+ds = ds.map(process_data, batched=True, batch_size=50_000)
 
 api = HfApi()
 repo_id = "nhagar/test-upload-c4"
 api.create_repo(repo_id, exist_ok=True, repo_type="dataset")
 
-chunk_size = 100_000
+# Start timing
+start_time = time.time()
+print("Starting pipeline...")
+
+chunk_size = 250_000
 max_items = 1_000_000
 total_processed = 0
 chunks_created = 0
