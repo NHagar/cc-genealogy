@@ -6,11 +6,8 @@ from huggingface_hub import HfApi
 
 
 def get_tld(url):
-    return (
-        tldextract.extract(url).domain + "." + tldextract.extract(url).suffix
-        if url
-        else None
-    )
+    extracted = tldextract.extract(url)
+    return f"{extracted.domain}.{extracted.suffix}" if url else None
 
 
 def process_data(examples):
