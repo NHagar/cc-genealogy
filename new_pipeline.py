@@ -15,12 +15,12 @@ def process_data(examples):
     return examples
 
 
-ds = load_dataset("allenai/c4", "en", split="train", streaming=True)
+ds = load_dataset("allenai/c4", "multilingual", split="train", streaming=True)
 ds = ds.remove_columns(["text", "timestamp"])
 ds = ds.map(process_data, batched=True, batch_size=50_000)
 
 api = HfApi()
-repo_id = "nhagar/test-upload-c4"
+repo_id = "nhagar/c4_urls_multilingual"
 api.create_repo(repo_id, exist_ok=True, repo_type="dataset")
 
 # Start timing
@@ -28,9 +28,10 @@ start_time = time.time()
 print("Starting pipeline...")
 
 chunk_size = 250_000
-max_items = 1_000_000
+milestone = 1_000_000  # Renamed from max_items to milestone for clarity
 total_processed = 0
 chunks_created = 0
+milestone_reached = False
 
 for i, chunk_ds in enumerate(ds.iter(batch_size=chunk_size)):
     chunk_start_time = time.time()
@@ -52,10 +53,18 @@ for i, chunk_ds in enumerate(ds.iter(batch_size=chunk_size)):
     )
     print(f"Total processed so far: {total_processed:,} items")
 
-    # Stop after reaching 1 million items
-    if total_processed >= max_items:
-        print(f"Reached {max_items:,} items limit, stopping")
-        break
+    # Log milestone when we reach 1M items
+    if not milestone_reached and total_processed >= milestone:
+        milestone_time = time.time()
+        milestone_duration = milestone_time - start_time
+        print(f"\n===== Milestone: {milestone:,} items processed =====")
+        print(
+            f"Time to process first {milestone:,} items: {milestone_duration:.2f} seconds ({milestone_duration / 60:.2f} minutes)"
+        )
+        print(
+            f"Processing speed for first {milestone:,} items: {milestone / milestone_duration:.2f} items per second"
+        )
+        milestone_reached = True
 
 end_time = time.time()
 total_time = end_time - start_time
