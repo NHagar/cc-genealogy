@@ -10,16 +10,16 @@ from src.processing import get_tld
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Process files from a dataset using a specific ruleset."
+        description="Process files from a dataset using a specific variant."
     )
     parser.add_argument(
         "--dataset", type=str, required=True, help="The dataset name to get files for"
     )
     parser.add_argument(
-        "--ruleset",
+        "--variant",
         type=str,
         required=True,
-        help="The ruleset to use for filtering the files",
+        help="The variant to use for filtering the files",
     )
     args = parser.parse_args()
 
@@ -27,9 +27,9 @@ def main():
     con = duckdb.connect("data/hf_files.db", read_only=False)
 
     # Get file table using provided arguments
-    file_table = get_file_table(args.dataset, args.ruleset, con)[:10]
+    file_table = get_file_table(args.dataset, args.variant, con)[:10]
     print(
-        f"Found {len(file_table)} files to process for dataset '{args.dataset}' using ruleset '{args.ruleset}'"
+        f"Found {len(file_table)} files to process for dataset '{args.dataset}' using variant '{args.variant}'"
     )
 
     # will use this to determine downstream file reads
