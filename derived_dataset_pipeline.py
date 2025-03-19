@@ -5,7 +5,7 @@ import os
 import dask.dataframe as dd
 import duckdb
 from dask.distributed import Client, LocalCluster
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from src.hf_files import get_file_table
 from src.processing import get_tld
@@ -18,16 +18,24 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@retry(stop=stop_after_attempt(7))
-def read_files_with_retry(batch, is_parquet=False):
+@retry(stop=stop_after_attempt(7), wait=wait_fixed(10))
+def process_with_retry(batch, is_parquet=False):
     """Read files with retry mechanism."""
     try:
         if is_parquet:
-            return dd.read_parquet(batch)
+            ddf = dd.read_parquet(batch)
         else:
-            return dd.read_json(batch)
+            ddf = dd.read_json(batch)
+        ddf = ddf[["url"]]
+        ddf["tld"] = ddf["url"].apply(get_tld, meta=("url", "object"))
+
+        output_dir = "data/processed"
+        os.makedirs(output_dir, exist_ok=True)
+        ddf.to_parquet(output_dir, write_index=False)
+
     except Exception as e:
         logger.error(f"Error reading files: {str(e)}")
+        raise e
 
 
 def main():
@@ -68,35 +76,25 @@ def main():
 
     for i, batch in enumerate(batches):
         logger.info(f"Processing batch {i + 1}/{len(batches)} with {len(batch)} files")
-        try:
-            # Use the retry-decorated function
-            ddf = read_files_with_retry(batch, is_parquet)
-            ddf = ddf[["url"]]
-            ddf["tld"] = ddf["url"].apply(get_tld, meta=("url", "object"))
 
-            output_dir = "data/processed"
-            os.makedirs(output_dir, exist_ok=True)
-            ddf.to_parquet(output_dir, write_index=False)
+        process_with_retry(batch, is_parquet)
 
-            # Repartition and upload the processed files
-            repartition_and_upload(args.dataset, args.variant, i)
+        # Repartition and upload the processed files
+        repartition_and_upload(args.dataset, args.variant, i)
 
-            # Update the database to mark files as collected
-            for filepath in batch:
-                con.execute(
-                    f"UPDATE {table_name} SET collected = true WHERE filepath = '{filepath}'"
-                )
-            logger.info(f"Updated status for {len(batch)} files in database")
+        # Update the database to mark files as collected
+        for filepath in batch:
+            con.execute(
+                f"UPDATE {table_name} SET collected = true WHERE filepath = '{filepath}'"
+            )
+        logger.info(f"Updated status for {len(batch)} files in database")
 
-            # delete the processed files
-            if os.path.exists(output_dir):
-                for file in os.listdir(output_dir):
-                    os.remove(os.path.join(output_dir, file))
-                os.rmdir(output_dir)
-        except Exception as e:
-            logger.error(f"Error processing batch {i}: {str(e)}")
-            logger.info("Continuing with next batch...")
-            continue
+        # delete the processed files
+        output_dir = "data/processed"
+        if os.path.exists(output_dir):
+            for file in os.listdir(output_dir):
+                os.remove(os.path.join(output_dir, file))
+            os.rmdir(output_dir)
 
     # Close the DuckDB connection
     con.close()
