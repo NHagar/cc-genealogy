@@ -58,16 +58,14 @@ def get_file_table(dataset: str, ruleset: str, con: duckdb.DuckDBPyConnection):
     # check if table exists and return if it does
     table_name = f"{dataset.replace('/', '_')}_{ruleset}"
     tables = con.execute("SHOW TABLES").fetchdf()
-    if table_name in tables["name"].values:
-        return con.execute(
-            f"SELECT filepath FROM {table_name} WHERE collected=false"
-        ).fetchdf()
-
-    files = get_files_for_dataset(dataset, ruleset)
-    con.execute(f"CREATE TABLE {table_name} (filepath VARCHAR, collected BOOLEAN)")
-    con.execute(
-        f"INSERT INTO {table_name} VALUES {','.join([f"('{f}', false)" for f in files])}"
+    if table_name not in tables["name"].values:
+        files = get_files_for_dataset(dataset, ruleset)
+        con.execute(f"CREATE TABLE {table_name} (filepath VARCHAR, collected BOOLEAN)")
+        con.execute(
+            f"INSERT INTO {table_name} VALUES {','.join([f"('{f}', false)" for f in files])}"
+        )
+    return (
+        con.execute(f"SELECT filepath FROM {table_name} WHERE collected=false")
+        .fetchdf()
+        .filepath.tolist()
     )
-    return con.execute(
-        f"SELECT filepath FROM {table_name} WHERE collected=false"
-    ).fetchdf()
