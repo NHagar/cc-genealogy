@@ -29,9 +29,10 @@ def get_files_for_dataset(dataset: str, variant: str) -> List[str]:
     """
     api = HfApi()
     repo_files = api.list_repo_files(dataset, repo_type="dataset")
-    prefix = dataset_rules[variant]["prefix"]
-    suffix = dataset_rules[variant]["suffix"]
-    exclude = dataset_rules[variant]["exclude"]
+    variant_rules = dataset_rules[dataset]["variants"][variant]
+    prefix = variant_rules["prefix"]
+    suffix = variant_rules["suffix"]
+    exclude = variant_rules["exclude"]
     files = [
         f
         for f in repo_files
@@ -56,8 +57,9 @@ def get_file_table(dataset: str, variant: str, con: duckdb.DuckDBPyConnection):
         con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
 
     Returns:
-        pandas.DataFrame: A DataFrame containing the filepaths and their collection status
-                         for files that have not been collected yet.
+        tuple: A tuple containing:
+            - list: List of file paths that have not been collected yet
+            - str: The name of the table in the database
     """
     # check if table exists and return if it does
     table_name = f"{dataset.replace('/', '_')}_{variant}"
@@ -68,8 +70,9 @@ def get_file_table(dataset: str, variant: str, con: duckdb.DuckDBPyConnection):
         con.execute(
             f"INSERT INTO {table_name} VALUES {','.join([f"('{f}', false)" for f in files])}"
         )
-    return (
+    file_list = (
         con.execute(f"SELECT filepath FROM {table_name} WHERE collected=false")
         .fetchdf()
         .filepath.tolist()
     )
+    return file_list, table_name
