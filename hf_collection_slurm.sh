@@ -9,4 +9,4 @@
 
 module purge all
 
-uv run derived_dataset_pipeline.py --source-repo allenai/c4 --configs en --batch-size 200000 --num-proc 16
+uv run derived_dataset_pipeline.py --dataset allenai/c4 --variant multilingual
