@@ -38,7 +38,7 @@ def get_files_for_dataset(dataset: str, ruleset: str) -> List[str]:
     return files
 
 
-def get_file_table(dataset: str, ruleset: str):
+def get_file_table(dataset: str, ruleset: str, con: duckdb.DuckDBPyConnection):
     """
     Get the formatted table of filepaths that match the ruleset for a given dataset.
 
@@ -49,17 +49,18 @@ def get_file_table(dataset: str, ruleset: str):
     Args:
         dataset (str): The dataset name to get files for.
         ruleset (str): The ruleset to use for filtering the files.
+        con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
 
     Returns:
         pandas.DataFrame: A DataFrame containing the filepaths and their collection status
                          for files that have not been collected yet.
     """
-    con = duckdb.connect("./data/hf_files.db", read_only=False)
     # check if table exists and return if it does
-    table_name = f"{dataset}_{ruleset}"
-    if table_name in con.table_names():
+    table_name = f"{dataset.replace('/', '_')}_{ruleset}"
+    tables = con.execute("SHOW TABLES").fetchdf()
+    if table_name in tables["name"].values:
         return con.execute(
-            f"SELECT * FROM {table_name} WHERE collected=false"
+            f"SELECT filepath FROM {table_name} WHERE collected=false"
         ).fetchdf()
 
     files = get_files_for_dataset(dataset, ruleset)
@@ -67,4 +68,6 @@ def get_file_table(dataset: str, ruleset: str):
     con.execute(
         f"INSERT INTO {table_name} VALUES {','.join([f"('{f}', false)" for f in files])}"
     )
-    return con.execute(f"SELECT * FROM {table_name} WHERE collected=false").fetchdf()
+    return con.execute(
+        f"SELECT filepath FROM {table_name} WHERE collected=false"
+    ).fetchdf()
