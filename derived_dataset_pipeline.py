@@ -33,7 +33,7 @@ def main():
     con = duckdb.connect("data/hf_files.db", read_only=False)
 
     # Get file table using provided arguments
-    file_table, table_name = get_file_table(args.dataset, args.variant, con)[:100]
+    file_table, table_name = get_file_table(args.dataset, args.variant, con)
     print(
         f"Found {len(file_table)} files to process for dataset '{args.dataset}' using variant '{args.variant}'"
     )
@@ -41,18 +41,22 @@ def main():
     # will use this to determine downstream file reads
     is_parquet = True if file_table[0].endswith(".parquet") else False
 
-    ddf = dd.read_json(file_table)
-    ddf = ddf[["url"]]
-    ddf["tld"] = ddf["url"].apply(get_tld, meta=("url", "object"))
+    # break file_table into batches of 1,000
+    batches = [file_table[i : i + 1000] for i in range(0, len(file_table), 1000)]
 
-    ddf.to_parquet("data/processed", write_index=False)
+    for batch in batches:
+        ddf = dd.read_json(batch)
+        ddf = ddf[["url"]]
+        ddf["tld"] = ddf["url"].apply(get_tld, meta=("url", "object"))
 
-    # Update the database to mark files as collected
-    for filepath in file_table:
-        con.execute(
-            f"UPDATE {table_name} SET collected = true WHERE filepath = '{filepath}'"
-        )
-    print(f"Updated status for {len(file_table)} files in database")
+        ddf.to_parquet("data/processed", write_index=False)
+
+        # Update the database to mark files as collected
+        for filepath in batch:
+            con.execute(
+                f"UPDATE {table_name} SET collected = true WHERE filepath = '{filepath}'"
+            )
+        print(f"Updated status for {len(batch)} files in database")
 
     # Close the DuckDB connection
     con.close()
