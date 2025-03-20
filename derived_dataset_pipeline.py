@@ -7,8 +7,8 @@ import duckdb
 from dask.distributed import Client, LocalCluster
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from src.hf_files import get_file_table
 from src.processing import get_tld
+from src.state_tracking import get_file_table
 from src.uploading import repartition_and_upload
 
 # Set up logging
