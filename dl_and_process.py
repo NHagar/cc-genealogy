@@ -70,6 +70,12 @@ def main():
         default=4,
         help="Number of processes to use (default: 4)",
     )
+    parser.add_argument(
+        "--cache-dir",
+        type=str,
+        default="data/cache",
+        help="Directory to use for caching datasets (default: data/cache)",
+    )
 
     args = parser.parse_args()
 
@@ -107,7 +113,7 @@ def main():
         ds = load_dataset(
             args.dataset,
             data_files=batch,
-            cache_dir="data/cache",
+            cache_dir=args.cache_dir,
             num_proc=args.num_proc,
         )
 
