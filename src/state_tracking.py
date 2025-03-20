@@ -55,7 +55,10 @@ def assign_batches(files, target_batch_size_bytes=100_000_000_000):
 
 
 def construct_dataset_tables(
-    dataset: str, variant: str, con: duckdb.DuckDBPyConnection
+    dataset: str,
+    variant: str,
+    con: duckdb.DuckDBPyConnection,
+    batch_size_bytes: int = 100_000_000_000,
 ):
     """
     Construct two tables - fpaths and batch status -
@@ -65,6 +68,7 @@ def construct_dataset_tables(
         dataset (str): The dataset name to construct a table for.
         variant (str): The variant to use for filtering the files.
         con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
+        batch_size_bytes (int, optional): Target batch size in bytes. Defaults to 100GB.
     """
     table_name = f"{dataset.replace('/', '_')}_{variant}"
     con.execute(f"CREATE TABLE {table_name} (filepath VARCHAR, batch INT)")
@@ -86,7 +90,9 @@ def construct_dataset_tables(
         and variant_rules["exclude"] not in i.path
     ]
 
-    batch_assignments = assign_batches(repo_files)
+    batch_assignments = assign_batches(
+        repo_files, target_batch_size_bytes=batch_size_bytes
+    )
     batch_nums = list(set([batch for _, batch, _ in batch_assignments]))
 
     con.execute(
@@ -142,4 +148,4 @@ def retrieve_next_unprocessed_batch(
         "SELECT filepath FROM {table_name} WHERE batch = {batch_num}"
     ).fetchall()
 
-    return [fpath[0] for fpath in fpaths]
+    return [fpath[0] for fpath in fpaths], batch_num
