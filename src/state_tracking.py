@@ -96,7 +96,7 @@ def construct_dataset_tables(
         con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
         batch_size_bytes (int, optional): Target batch size in bytes. Defaults to 100GB.
     """
-    table_name = f"{dataset.replace('/', '_')}_{variant}"
+    table_name = f"{dataset.replace('/', '_').replace('-', '_')}_{variant}"
     logger.info(f"Creating tables for {dataset}/{variant}")
 
     con.execute(f"CREATE TABLE {table_name} (filepath VARCHAR, batch INT)")
@@ -153,7 +153,7 @@ def check_if_dataset_exists(dataset: str, variant: str, con: duckdb.DuckDBPyConn
     Returns:
         bool: True if the tables exist, False otherwise.
     """
-    table_name = f"{dataset.replace('/', '_')}_{variant}"
+    table_name = f"{dataset.replace('/', '_').replace('-', '_')}_{variant}"
     logger.debug(f"Checking if {table_name} exists in database")
 
     tables = con.execute("SHOW TABLES").fetchall()
@@ -177,7 +177,7 @@ def retrieve_next_unprocessed_batch(
     Returns:
         tuple: A tuple containing a list of filepaths and the batch number, or None if no batches are left.
     """
-    table_name = f"{dataset.replace('/', '_')}_{variant}"
+    table_name = f"{dataset.replace('/', '_').replace('-', '_')}_{variant}"
     logger.debug(f"Retrieving next unprocessed batch for {dataset}/{variant}")
 
     result = con.execute(
