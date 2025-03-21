@@ -15,7 +15,16 @@ dataset_rules = {
                 "exclude": "-validation",
             }
         }
-    }
+    },
+    "tiiuae/falcon-refinedweb": {
+        "variants": {
+            "default": {
+                "prefix": "data/",
+                "suffix": ".parquet",
+                "exclude": None,
+            }
+        }
+    },
 }
 
 
@@ -105,12 +114,10 @@ def construct_dataset_tables(
         path_in_repo=variant_rules["prefix"],
     )
 
-    repo_files = [
-        i
-        for i in repo_files
-        if i.path.endswith(variant_rules["suffix"])
-        and variant_rules["exclude"] not in i.path
-    ]
+    repo_files = [i for i in repo_files if i.path.endswith(variant_rules["suffix"])]
+    if variant_rules["exclude"] is not None:
+        repo_files = [i for i in repo_files if variant_rules["exclude"] not in i.path]
+
     logger.info(f"Found {len(repo_files)} files matching the criteria")
 
     logger.info("Assigning files to batches")
