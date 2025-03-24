@@ -121,7 +121,12 @@ def main():
         ds = ds.select_columns(["url"])
 
         logger.debug("Mapping TLD extraction function")
-        ds = ds.map(get_tld, batched=True, num_proc=args.num_proc)
+        ds = ds.map(
+            get_tld,
+            batched=True,
+            num_proc=args.num_proc,
+            load_from_cache_file=False,
+        )
 
         logger.info(f"Pushing processed batch {batch_num} to HuggingFace Hub")
         ds.push_to_hub(
@@ -138,6 +143,15 @@ def main():
 
         # Clear local cache
         logger.debug("Cleaning up cache files")
+
+        # Delete the local cache files
+        for file in os.listdir(args.cache_dir):
+            os.remove(os.path.join(args.cache_dir, file))
+
+        # Delete the local cache directory
+        os.rmdir(args.cache_dir)
+
+        # Clean up the dataset
         ds.cleanup_cache_files()
 
         batches_processed += 1
