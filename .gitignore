@@ -12,3 +12,4 @@ copy_to_onedrive.sh
 consolidated_data_files/
 deepdive.sh
 cc*/
+logs/
