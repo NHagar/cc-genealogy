@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import shutil
 import sys
 
 import duckdb
@@ -145,11 +146,7 @@ def main():
         logger.debug("Cleaning up cache files")
 
         # Delete the local cache files
-        for file in os.listdir(args.cache_dir):
-            os.remove(os.path.join(args.cache_dir, file))
-
-        # Delete the local cache directory
-        os.rmdir(args.cache_dir)
+        shutil.rmtree(args.cache_dir)
 
         # Clean up the dataset
         ds.cleanup_cache_files()
