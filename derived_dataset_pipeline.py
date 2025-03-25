@@ -147,6 +147,8 @@ def main():
 
         # Delete the local cache files
         shutil.rmtree(args.cache_dir)
+        shutil.rmtree(os.path.expanduser("~/.cache/huggingface/datasets"))
+        shutil.rmtree(os.path.expanduser("~/.cache/huggingface/hub"))
 
         batches_processed += 1
         logger.info(f"Successfully processed batch {batch_num}")
