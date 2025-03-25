@@ -148,9 +148,6 @@ def main():
         # Delete the local cache files
         shutil.rmtree(args.cache_dir)
 
-        # Clean up the dataset
-        ds.cleanup_cache_files()
-
         batches_processed += 1
         logger.info(f"Successfully processed batch {batch_num}")
 
