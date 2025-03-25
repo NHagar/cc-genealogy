@@ -51,8 +51,8 @@ def populate_readme_table(datasets):
             readme = DatasetCard.load(dataset).text
             con.execute("INSERT INTO readmes (id, readme) VALUES (?, ?)", (dataset, readme))
             con.execute("UPDATE datasets SET readme_collected = TRUE WHERE id = ?", (dataset,))
-        except errors.EntryNotFoundError:
-            print(f"Dataset {dataset} not found")
+        except (errors.EntryNotFoundError, errors.RepositoryNotFoundError) as e:
+            print(f"Dataset {dataset} not found: {e}")
             con.execute("UPDATE datasets SET readme_collected = TRUE WHERE id = ?", (dataset,))
 
 def get_datasets_needing_readme():
