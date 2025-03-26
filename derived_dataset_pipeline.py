@@ -146,9 +146,12 @@ def main():
         logger.debug("Cleaning up cache files")
 
         # Delete the local cache files
-        shutil.rmtree(args.cache_dir)
-        shutil.rmtree(os.path.expanduser("~/.cache/huggingface/datasets"))
-        shutil.rmtree(os.path.expanduser("~/.cache/huggingface/hub"))
+        if os.path.exists(args.cache_dir):
+            shutil.rmtree(args.cache_dir)
+        if os.path.exists(os.path.expanduser("~/.cache/huggingface/datasets")):
+            shutil.rmtree(os.path.expanduser("~/.cache/huggingface/datasets"))
+        if os.path.exists(os.path.expanduser("~/.cache/huggingface/hub")):
+            shutil.rmtree(os.path.expanduser("~/.cache/huggingface/hub"))
 
         batches_processed += 1
         logger.info(f"Successfully processed batch {batch_num}")
