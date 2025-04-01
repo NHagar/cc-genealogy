@@ -5,7 +5,7 @@ import shutil
 import sys
 
 import duckdb
-from datasets import load_dataset
+from datasets import VerificationMode, load_dataset
 
 from src.processing import get_tld
 from src.state_tracking import (
@@ -116,6 +116,7 @@ def main():
             data_files=batch,
             cache_dir=args.cache_dir,
             num_proc=args.num_proc,
+            verification_mode=VerificationMode.NO_CHECKS,
         )
 
         logger.debug("Selecting URL column")
@@ -139,7 +140,7 @@ def main():
         # Update the database to mark files as collected
         logger.debug(f"Marking batch {batch_num} as collected in database")
         con.execute(
-            f"UPDATE {args.dataset.replace('/', '_')}_{args.variant}_status SET collected = true WHERE batch = {batch_num}"
+            f"UPDATE {args.dataset.replace('/', '_').replace('-', '_')}_{args.variant}_status SET collected = true WHERE batch = {batch_num}"
         )
 
         # Clear local cache
