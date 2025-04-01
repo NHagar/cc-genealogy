@@ -130,9 +130,14 @@ def main():
             load_from_cache_file=False,
         )
 
+        repo_id = f"nhagar/{args.dataset.split('/')[1]}_urls"
+
+        if args.variant != "default":
+            repo_id += f"_{args.variant}"
+
         logger.info(f"Pushing processed batch {batch_num} to HuggingFace Hub")
         ds.push_to_hub(
-            repo_id=f"nhagar/{args.dataset.split('/')[1]}_urls_{args.variant}",
+            repo_id=repo_id,
             data_dir=f"batch_{batch_num}",
             max_shard_size="1GB",
         )
