@@ -9,4 +9,4 @@
 
 module purge all
 
-uv run derived_dataset_pipeline.py --dataset allenai/c4 --variant multilingual --batch-size 1_000_000_000_000 --num-proc 16 --cache-dir /scratch/nrh146/cache
+uv run derived_dataset_pipeline.py --dataset tiiuae/falcon-refinedweb --variant default --batch-size 500_000_000_000 --num-proc 16 --cache-dir /scratch/nrh146/cache
