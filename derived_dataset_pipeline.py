@@ -80,6 +80,10 @@ def main():
 
     args = parser.parse_args()
 
+    # set up caching
+    os.makedirs(args.cache_dir, exist_ok=True)
+    os.environ["HF_HOME"] = args.cache_dir
+
     # Set up logging
     logger = setup_logging()
 
@@ -114,7 +118,7 @@ def main():
         ds = load_dataset(
             args.dataset,
             data_files=batch,
-            cache_dir=args.cache_dir,
+            cache_dir=args.cache_dir + "/dl",
             num_proc=args.num_proc,
             verification_mode=VerificationMode.NO_CHECKS,
         )
@@ -149,15 +153,21 @@ def main():
         )
 
         # Clear local cache
-        logger.debug("Cleaning up cache files")
+        logger.debug(f"Cleaning up cache files in {args.cache_dir}")
 
-        # Delete the local cache files
         if os.path.exists(args.cache_dir):
-            shutil.rmtree(args.cache_dir)
-        if os.path.exists(os.path.expanduser("~/.cache/huggingface/datasets")):
-            shutil.rmtree(os.path.expanduser("~/.cache/huggingface/datasets"))
-        if os.path.exists(os.path.expanduser("~/.cache/huggingface/hub")):
-            shutil.rmtree(os.path.expanduser("~/.cache/huggingface/hub"))
+            datasets_cache_path = os.path.join(args.cache_dir, "datasets")
+            hub_cache_path = os.path.join(args.cache_dir, "hub")
+            dl_cache_path = os.path.join(args.cache_dir, "dl")
+            if os.path.exists(dl_cache_path):
+                logger.debug(f"Removing {dl_cache_path}")
+                shutil.rmtree(dl_cache_path)
+            if os.path.exists(datasets_cache_path):
+                logger.debug(f"Removing {datasets_cache_path}")
+                shutil.rmtree(datasets_cache_path)
+            if os.path.exists(hub_cache_path):
+                logger.debug(f"Removing {hub_cache_path}")
+                shutil.rmtree(hub_cache_path)
 
         batches_processed += 1
         logger.info(f"Successfully processed batch {batch_num}")
