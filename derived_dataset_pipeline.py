@@ -82,7 +82,6 @@ def main():
 
     # set up caching
     os.makedirs(args.cache_dir, exist_ok=True)
-    os.environ["HF_HOME"] = args.cache_dir
 
     # Set up logging
     logger = setup_logging()
