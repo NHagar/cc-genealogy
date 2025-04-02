@@ -118,7 +118,7 @@ def main():
             args.dataset,
             data_files=batch,
             cache_dir=args.cache_dir + "/dl",
-            num_proc=args.num_proc,
+            # num_proc=args.num_proc,
             verification_mode=VerificationMode.NO_CHECKS,
         )
 
