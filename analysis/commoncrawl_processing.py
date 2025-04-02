@@ -149,7 +149,7 @@ class AthenaToHuggingFace:
                 # Upload to Hugging Face
                 print("Uploading to Hugging Face...")
                 dataset = Dataset.from_parquet(local_path)
-                dataset.push_to_hub(repo_id=f"nhagar/{partition}_urls", token=token)
+                dataset.push_to_hub(repo_id=f"nhagar/{partition}_nyt_urls", token=token)
                 print(f"Uploaded {partition} to Hugging Face")
 
                 # Clean up local file
@@ -181,14 +181,14 @@ if __name__ == "__main__":
 
     # Example query template and partitions
     base_query = """
-    SELECT 
-        crawl, 
-        url_host_name, 
-        COUNT(*) AS url_count 
-    FROM "ccindex"."ccindex" 
-    WHERE 
-        crawl = '{partition}' 
-    GROUP BY 1, 2
+    SELECT
+        url
+    FROM "ccindex"."ccindex"
+    WHERE
+        crawl = '{partition}'
+        AND url_host_name = 'www.nytimes.com'
+        AND url NOT IN ('https://www.nytimes.com', 'https://www.nytimes.com/')
+        AND url NOT LIKE '%robots.txt'
     """
 
     with open("data/commoncrawl/partitions_to_crawl.txt", "r") as f:
