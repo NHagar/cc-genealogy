@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "bokeh>=3.6.2",
+    "boto3>=1.37.26",
     "dask[distributed]>=2025.1.0",
     "datasets>=3.2.0",
     "duckdb>=1.1.3",
