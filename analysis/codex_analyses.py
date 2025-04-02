@@ -140,7 +140,6 @@ def count_and_pct_breakdown(dataset, column):
     total = dataset.num_rows
     all_counts = counter.most_common()
     all_counts = [(k, v, v / total) for k, v in all_counts]
-    all_counts = sorted(all_counts, key=lambda x: x[1], reverse=True)
     return all_counts
 
 
@@ -183,27 +182,21 @@ def main():
     )
 
     # iterate through cc_main_falcon, sum url_counts across all datasets, and output top 20 to CSV
-    cc_main_falcon_sums = {}
+    cc_main_falcon_sums = Counter()
     total_url_count = 0
     for dataset in cc_main_falcon:
-        dataset = dataset.to_pandas()
-        total_url_count += dataset["url_count"].sum()
-        for _, row in dataset.iterrows():
+        for row in dataset:
             domain = row["domain"]
             url_count = row["url_count"]
-            if domain not in cc_main_falcon_sums:
-                cc_main_falcon_sums[domain] = 0
             cc_main_falcon_sums[domain] += url_count
-    cc_main_falcon_sorted = sorted(
-        cc_main_falcon_sums.items(), key=lambda x: x[1], reverse=True
-    )
-    cc_main_falcon_top_sites = cc_main_falcon_sorted[:20]
+            total_url_count += url_count
+    cc_main_falcon_top_sites = cc_main_falcon_sums.most_common(20)
     with open("data/cc_main_falcon_top_sites.csv", "w") as f:
         f.write("domain,count\n")
         for domain, count in cc_main_falcon_top_sites:
             f.write(f"{domain},{count}\n")
     print(
-        "Top sites for CC-MAIN-2019-18 dataset have been saved to cc_main_falcon_top_sites.csv."
+        "Top sites for falcon cc datasets have been saved to cc_main_falcon_top_sites.csv."
     )
 
     # get slice of c4 and falcon with domain of nytimes.com
@@ -226,10 +219,8 @@ def main():
     falcon_nyt_pct = falcon_nyt.num_rows / falcon.num_rows * 100
     # calculate percentange of CC data that is nytimes.com
     cc_c4_nyt_pct = cc_nyt_c4.num_rows / cc_main_c4.num_rows * 100
-    cc_falcon_nyt_pct = 0
-    for dataset in cc_nyt_falcon:
-        cc_falcon_nyt_pct += dataset.num_rows / total_url_count * 100
-    cc_falcon_nyt_pct /= len(cc_nyt_falcon)
+    total_nyt_falcon_rows = sum(dataset.num_rows for dataset in cc_nyt_falcon)
+    cc_falcon_nyt_pct = total_nyt_falcon_rows / total_url_count * 100
     # write percentages to CSV
     with open("data/nyt_pct.csv", "w") as f:
         f.write("dataset,percentage\n")
@@ -272,19 +263,17 @@ def main():
     c4_nyt_section_counts = count_and_pct_breakdown(c4_nyt, "section")
     falcon_nyt_section_counts = count_and_pct_breakdown(falcon_nyt, "section")
     cc_nyt_c4_section_counts = count_and_pct_breakdown(cc_nyt_c4, "section")
-    cc_nyt_falcon_section_counts = []
+    cc_nyt_falcon_section_agg_counter = Counter()
     total_nyt_url_count = 0
     for dataset in cc_nyt_falcon:
-        cc_nyt_falcon_section_counts += count_and_pct_breakdown(dataset, "section")
         total_nyt_url_count += dataset.num_rows
-    # aggregate counts and percentages for cc_nyt_falcon
-    cc_nyt_falcon_section_counts = Counter(
-        dict(cc_nyt_falcon_section_counts)
-    ).most_common()
-    cc_nyt_falcon_section_counts = [
+        for batch in dataset.iter(batch_size=10_000):
+            valid_items = [item for item in batch["section"] if item is not None]
+            cc_nyt_falcon_section_agg_counter.update(valid_items)
+    cc_nyt_falcon_section_counts = cc_nyt_falcon_section_agg_counter.most_common()
+    cc_nyt_falcon_section_counts_final = [
         (k, v, v / total_nyt_url_count) for k, v in cc_nyt_falcon_section_counts
     ]
-    # write counts and percentages to CSV
     with open("data/section_counts.csv", "w") as f:
         f.write("dataset,section,count,percentage\n")
         for section, count, pct in c4_nyt_section_counts:
@@ -293,21 +282,20 @@ def main():
             f.write(f"falcon,{section},{count},{pct}\n")
         for section, count, pct in cc_nyt_c4_section_counts:
             f.write(f"cc_c4,{section},{count},{pct}\n")
-        for section, count, pct in cc_nyt_falcon_section_counts:
+        for section, count, pct in cc_nyt_falcon_section_counts_final:
             f.write(f"cc_falcon,{section},{count},{pct}\n")
     print("Section counts and percentages have been saved to section_counts.csv.")
     # get count and percentage breakdown of yearmonth for each dataset, then output to CSV
     c4_nyt_yearmonth_counts = count_and_pct_breakdown(c4_nyt, "yearmonth")
     falcon_nyt_yearmonth_counts = count_and_pct_breakdown(falcon_nyt, "yearmonth")
     cc_nyt_c4_yearmonth_counts = count_and_pct_breakdown(cc_nyt_c4, "yearmonth")
-    cc_nyt_falcon_yearmonth_counts = []
+    cc_nyt_falcon_yearmonth_agg_counter = Counter()
     for dataset in cc_nyt_falcon:
-        cc_nyt_falcon_yearmonth_counts += count_and_pct_breakdown(dataset, "yearmonth")
-    # aggregate counts and percentages for cc_nyt_falcon
-    cc_nyt_falcon_yearmonth_counts = Counter(
-        dict(cc_nyt_falcon_yearmonth_counts)
-    ).most_common()
-    cc_nyt_falcon_yearmonth_counts = [
+        for batch in dataset.iter(batch_size=10_000):
+            valid_items = [item for item in batch["yearmonth"] if item is not None]
+            cc_nyt_falcon_yearmonth_agg_counter.update(valid_items)
+    cc_nyt_falcon_yearmonth_counts = cc_nyt_falcon_yearmonth_agg_counter.most_common()
+    cc_nyt_falcon_yearmonth_counts_final = [
         (k, v, v / total_nyt_url_count) for k, v in cc_nyt_falcon_yearmonth_counts
     ]
     # write counts and percentages to CSV
@@ -319,7 +307,7 @@ def main():
             f.write(f"falcon,{yearmonth},{count},{pct}\n")
         for yearmonth, count, pct in cc_nyt_c4_yearmonth_counts:
             f.write(f"cc_c4,{yearmonth},{count},{pct}\n")
-        for yearmonth, count, pct in cc_nyt_falcon_yearmonth_counts:
+        for yearmonth, count, pct in cc_nyt_falcon_yearmonth_counts_final:
             f.write(f"cc_falcon,{yearmonth},{count},{pct}\n")
 
 
