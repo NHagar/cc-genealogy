@@ -156,30 +156,30 @@ def main():
         for cc in cc_main_list
     ]
 
-    # get top 20 sites for c4 and falcon, and output to CSVs
-    c4_top_sites = get_top_n_sites(c4, n=20)
-    falcon_top_sites = get_top_n_sites(falcon, n=20)
+    # # get top 20 sites for c4 and falcon, and output to CSVs
+    # c4_top_sites = get_top_n_sites(c4, n=20)
+    # falcon_top_sites = get_top_n_sites(falcon, n=20)
 
-    with open("data/c4_top_sites.csv", "w") as f:
-        f.write("domain,count\n")
-        for domain, count in c4_top_sites:
-            f.write(f"{domain},{count}\n")
-    with open("data/falcon_top_sites.csv", "w") as f:
-        f.write("domain,count\n")
-        for domain, count in falcon_top_sites:
-            f.write(f"{domain},{count}\n")
-    print(
-        "Top sites for C4 and Falcon datasets have been saved to c4_top_sites.csv and falcon_top_sites.csv."
-    )
+    # with open("data/c4_top_sites.csv", "w") as f:
+    #     f.write("domain,count\n")
+    #     for domain, count in c4_top_sites:
+    #         f.write(f"{domain},{count}\n")
+    # with open("data/falcon_top_sites.csv", "w") as f:
+    #     f.write("domain,count\n")
+    #     for domain, count in falcon_top_sites:
+    #         f.write(f"{domain},{count}\n")
+    # print(
+    #     "Top sites for C4 and Falcon datasets have been saved to c4_top_sites.csv and falcon_top_sites.csv."
+    # )
 
-    # sort cc_main_c4 by url_count and output top 20 to CSV
-    cc_main_c4_sorted = cc_main_c4.sort("url_count", reverse=True)
-    cc_main_c4_top_sites = cc_main_c4_sorted.select(range(20))
-    cc_main_c4_top_sites = cc_main_c4_top_sites.to_pandas()
-    cc_main_c4_top_sites.to_csv("data/cc_main_c4_top_sites.csv", index=False)
-    print(
-        "Top sites for CC-MAIN-2019-18 dataset have been saved to cc_main_c4_top_sites.csv."
-    )
+    # # sort cc_main_c4 by url_count and output top 20 to CSV
+    # cc_main_c4_sorted = cc_main_c4.sort("url_count", reverse=True)
+    # cc_main_c4_top_sites = cc_main_c4_sorted.select(range(20))
+    # cc_main_c4_top_sites = cc_main_c4_top_sites.to_pandas()
+    # cc_main_c4_top_sites.to_csv("data/cc_main_c4_top_sites.csv", index=False)
+    # print(
+    #     "Top sites for CC-MAIN-2019-18 dataset have been saved to cc_main_c4_top_sites.csv."
+    # )
 
     # iterate through cc_main_falcon, sum url_counts across all datasets, and output top 20 to CSV
     cc_main_falcon_sums = Counter()
