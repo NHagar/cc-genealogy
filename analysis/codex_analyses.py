@@ -186,7 +186,7 @@ def main():
     total_url_count = 0
     for dataset in cc_main_falcon:
         for row in dataset:
-            domain = row["domain"]
+            domain = row["url_host_name"]
             url_count = row["url_count"]
             cc_main_falcon_sums[domain] += url_count
             total_url_count += url_count
