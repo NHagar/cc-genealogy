@@ -25,6 +25,15 @@ dataset_rules = {
             }
         }
     },
+    "uonlp/culturax": {
+        "variants": {
+            "default": {
+                "prefix": ".",
+                "suffix": ".parquet",
+                "exclude": None,
+            }
+        }
+    },
 }
 
 
