@@ -7,10 +7,11 @@ import sys
 import duckdb
 from datasets import VerificationMode, load_dataset
 
-from src.processing import get_tld
+from src.processing import extract_urls, get_tld
 from src.state_tracking import (
     check_if_dataset_exists,
     construct_dataset_tables,
+    dataset_rules,
     retrieve_next_unprocessed_batch,
 )
 
@@ -122,8 +123,14 @@ def main():
             verification_mode=VerificationMode.NO_CHECKS,
         )
 
-        logger.debug("Selecting URL column")
-        ds = ds.select_columns(["url"])
+        # Get URL extraction configuration for this dataset
+        extraction_config = dataset_rules[args.dataset]["variants"][args.variant][
+            "url_extraction"
+        ]
+        logger.debug(f"Using URL extraction config: {extraction_config}")
+
+        # Apply flexible URL extraction
+        ds = extract_urls(ds, extraction_config, num_proc=args.num_proc)
 
         logger.debug("Mapping TLD extraction function")
         ds = ds.map(

@@ -13,6 +13,7 @@ dataset_rules = {
                 "prefix": ["multilingual/"],
                 "suffix": ".json.gz",
                 "exclude": "-validation",
+                "url_extraction": {"type": "direct", "column": "url"},
             }
         }
     },
@@ -22,6 +23,7 @@ dataset_rules = {
                 "prefix": ["data/"],
                 "suffix": ".parquet",
                 "exclude": None,
+                "url_extraction": {"type": "direct", "column": "url"},
             }
         }
     },
@@ -31,6 +33,7 @@ dataset_rules = {
                 "prefix": None,
                 "suffix": ".parquet",
                 "exclude": None,
+                "url_extraction": {"type": "direct", "column": "url"},
             }
         }
     },
@@ -40,7 +43,12 @@ dataset_rules = {
                 "prefix": [
                     "data/zyda_no_starcoder/zyda_c4-en",
                     "data/zyda_no_starcoder/zyda_refinedweb",
-                ]
+                ],
+                "url_extraction": {
+                    "type": "eval_dict",
+                    "column": "source_other",
+                    "field": "url",
+                },
             }
         }
     },
