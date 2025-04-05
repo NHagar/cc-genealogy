@@ -44,6 +44,8 @@ dataset_rules = {
                     "data/zyda_no_starcoder/zyda_c4-en",
                     "data/zyda_no_starcoder/zyda_refinedweb",
                 ],
+                "suffix": ".parquet",
+                "exclude": None,
                 "url_extraction": {
                     "type": "eval_dict",
                     "column": "source_other",
