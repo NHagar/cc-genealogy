@@ -115,11 +115,21 @@ def main():
         logger.info(f"Processing batch {batch_num} with {len(batch)} files")
 
         logger.debug(f"Loading dataset from batch {batch_num}")
+        # Loading twice for arcane reasons - the first load actually downloads files,
+        # the second one loads them from the cache
+        # This ensures optimal bandwidth usage and split generation
+        _ = load_dataset(
+            args.dataset,
+            data_files=batch,
+            cache_dir=args.cache_dir + "/dl",
+            num_proc=1,
+            verification_mode=VerificationMode.NO_CHECKS,
+        )
         ds = load_dataset(
             args.dataset,
             data_files=batch,
             cache_dir=args.cache_dir + "/dl",
-            num_proc=args.num_proc // 4,
+            num_proc=16,
             verification_mode=VerificationMode.NO_CHECKS,
         )
 
