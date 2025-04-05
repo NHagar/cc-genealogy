@@ -10,27 +10,47 @@ dataset_rules = {
     "allenai/c4": {
         "variants": {
             "multilingual": {
-                "prefix": "multilingual/",
+                "prefix": ["multilingual/"],
                 "suffix": ".json.gz",
                 "exclude": "-validation",
+                "url_extraction": {"type": "direct", "column": "url"},
             }
         }
     },
     "tiiuae/falcon-refinedweb": {
         "variants": {
             "default": {
-                "prefix": "data/",
+                "prefix": ["data/"],
                 "suffix": ".parquet",
                 "exclude": None,
+                "url_extraction": {"type": "direct", "column": "url"},
             }
         }
     },
     "uonlp/culturax": {
         "variants": {
             "default": {
-                "prefix": ".",
+                "prefix": None,
                 "suffix": ".parquet",
                 "exclude": None,
+                "url_extraction": {"type": "direct", "column": "url"},
+            }
+        }
+    },
+    "zyphra/zyda": {
+        "variants": {
+            "default": {
+                "prefix": [
+                    "data/zyda_no_starcoder/zyda_c4-en",
+                    "data/zyda_no_starcoder/zyda_refinedweb",
+                ],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": {
+                    "type": "eval_dict",
+                    "column": "source_other",
+                    "field": "url",
+                },
             }
         }
     },
@@ -120,8 +140,14 @@ def construct_dataset_tables(
         dataset,
         repo_type="dataset",
         recursive=True,
-        path_in_repo=variant_rules["prefix"],
     )
+
+    if variant_rules["prefix"] is not None:
+        repo_files = [
+            i
+            for i in repo_files
+            if any(i.path.startswith(prefix) for prefix in variant_rules["prefix"])
+        ]
 
     repo_files = [i for i in repo_files if i.path.endswith(variant_rules["suffix"])]
     if variant_rules["exclude"] is not None:
