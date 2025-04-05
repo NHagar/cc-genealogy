@@ -118,7 +118,7 @@ def main():
         # Loading twice for arcane reasons - the first load actually downloads files,
         # the second one loads them from the cache
         # This ensures optimal bandwidth usage and split generation
-        _ = load_dataset(
+        load_dataset(
             args.dataset,
             data_files=batch,
             cache_dir=args.cache_dir + "/dl",
