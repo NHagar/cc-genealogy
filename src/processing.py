@@ -1,3 +1,5 @@
+import ast
+
 import tldextract
 
 
@@ -39,7 +41,7 @@ def extract_urls(ds, extraction_config, num_proc=1):
             for item in batch[column]:
                 try:
                     if isinstance(item, str):
-                        value_dict = eval(item)
+                        value_dict = ast.literal_eval(item)
                     else:
                         value_dict = item
                     urls.append(value_dict[field])
