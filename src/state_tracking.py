@@ -64,6 +64,16 @@ dataset_rules = {
             }
         }
     },
+    "zyphra/dclm-dedup": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": {"type": "direct", "column": "url"},
+            }
+        }
+    },
 }
 
 
