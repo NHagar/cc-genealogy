@@ -173,7 +173,7 @@ def main():
 
         if os.path.exists(args.cache_dir):
             datasets_cache_path = os.path.join(args.cache_dir, "datasets")
-            hub_cache_path = os.path.join(args.cache_dir, "hub")
+            hub_cache_path = os.path.join(os.environ.get("HF_HOME"), "hub")
             dl_cache_path = os.path.join(args.cache_dir, "dl")
             if os.path.exists(dl_cache_path):
                 logger.debug(f"Removing {dl_cache_path}")
