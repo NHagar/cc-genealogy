@@ -94,11 +94,13 @@ def main():
         f"Using batch size: {args.batch_size} bytes, num_proc: {args.num_proc}"
     )
 
+    dataset_name_clean = (
+        args.dataset.replace("/", "_").replace("-", "_").replace(".", "_")
+    )
+
     # Connect to the database
     logger.info("Connecting to database")
-    con = duckdb.connect(
-        f"data/{args.dataset.replace('/', '_').replace('-', '_')}_{args.variant}"
-    )
+    con = duckdb.connect(f"data/{dataset_name_clean}_{args.variant}")
     logger.debug("Database connection successful")
 
     # Check if dataset exists, if not, create it
@@ -167,7 +169,7 @@ def main():
         # Update the database to mark files as collected
         logger.debug(f"Marking batch {batch_num} as collected in database")
         con.execute(
-            f"UPDATE {args.dataset.replace('/', '_').replace('-', '_')}_{args.variant}_status SET collected = true WHERE batch = {batch_num}"
+            f"UPDATE {dataset_name_clean}_{args.variant}_status SET collected = true WHERE batch = {batch_num}"
         )
 
         # Clear local cache
