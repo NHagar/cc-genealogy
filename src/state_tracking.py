@@ -54,6 +54,16 @@ dataset_rules = {
             }
         }
     },
+    "zyphra/zyda-2": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": {"type": "direct", "column": "url"},
+            }
+        }
+    },
 }
 
 
