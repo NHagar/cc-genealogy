@@ -1,6 +1,6 @@
 import logging
+import os
 
-import duckdb
 from huggingface_hub import HfApi
 
 # Set up module logger
@@ -135,35 +135,28 @@ def assign_batches(files, target_batch_size_bytes=100_000_000_000):
     return result
 
 
-def construct_dataset_tables(
+def write_batch_files(
     dataset: str,
     variant: str,
-    con: duckdb.DuckDBPyConnection,
     batch_size_bytes: int = 100_000_000_000,
-):
+) -> int:
     """
-    Construct two tables - fpaths and batch status -
-    in the DuckDB database for the specified dataset and variant.
+    Writes directory of batch txt files, one URL per line.
 
     Args:
-        dataset (str): The dataset name to construct a table for.
+        dataset (str): The dataset name to write batch files for.
         variant (str): The variant to use for filtering the files.
-        con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
         batch_size_bytes (int, optional): Target batch size in bytes. Defaults to 100GB.
     """
-    table_name = (
+    logger.info(f"Writing batch files for {dataset}/{variant}")
+    directory_name = (
         f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     )
-    logger.info(f"Creating tables for {dataset}/{variant}")
-
-    con.execute(
-        f"CREATE TABLE {table_name} (filepath VARCHAR, download_url VARCHAR, batch INT)"
-    )
-    con.execute(f"CREATE TABLE {table_name}_status (batch INT, collected BOOLEAN)")
-    logger.debug(f"Created tables {table_name} and {table_name}_status")
+    logger.info(f"Creating directory {directory_name} for batch files")
+    os.makedirs(directory_name, exist_ok=True)
+    logger.info(f"Directory {directory_name} created")
 
     variant_rules = dataset_rules[dataset]["variants"][variant]
-
     logger.info(f"Fetching repository files from HuggingFace ({dataset})")
     api = HfApi()
     repo_files = api.list_repo_tree(
@@ -171,172 +164,136 @@ def construct_dataset_tables(
         repo_type="dataset",
         recursive=True,
     )
-
     if variant_rules["prefix"] is not None:
         repo_files = [
             i
             for i in repo_files
             if any(i.path.startswith(prefix) for prefix in variant_rules["prefix"])
         ]
-
     repo_files = [i for i in repo_files if i.path.endswith(variant_rules["suffix"])]
     if variant_rules["exclude"] is not None:
         repo_files = [i for i in repo_files if variant_rules["exclude"] not in i.path]
-
     logger.info(f"Found {len(repo_files)} files matching the criteria")
-
     logger.info("Assigning files to batches")
     batch_assignments = assign_batches(
         repo_files, target_batch_size_bytes=batch_size_bytes
     )
     batch_nums = list(set([batch for _, batch, _ in batch_assignments]))
     logger.info(f"Created {len(batch_nums)} batches")
-
-    logger.debug(f"Inserting {len(batch_assignments)} file entries into {table_name}")
-    con.execute(
-        f"INSERT INTO {table_name} VALUES {','.join([f"('{fpath}', 'https://huggingface.co/datasets/{dataset}/resolve/main/{fpath}', {batch})" for fpath, batch, _ in batch_assignments])}"
-    )
-
     logger.debug(
-        f"Inserting {len(batch_nums)} batch status entries into {table_name}_status"
+        f"Inserting {len(batch_assignments)} file entries into {directory_name}"
     )
-    con.execute(
-        f"INSERT INTO {table_name}_status VALUES {','.join([f'({batch}, false)' for batch in batch_nums])}"
-    )
-    logger.info("Successfully populated database tables")
+    for batch_num in batch_nums:
+        batch_files = [
+            f"https://huggingface.co/datasets/{dataset}/resolve/main/{fpath}"
+            for fpath, batch, _ in batch_assignments
+            if batch == batch_num
+        ]
+        out_path = os.path.join(directory_name, f"download_urls_batch_{batch_num}.txt")
+        with open(out_path, "w") as f:
+            for url in batch_files:
+                f.write(f"{url}\n")
+
+    logger.info(f"Batch files written to {directory_name}")
+    return len(batch_nums)
 
 
-def check_if_dataset_exists(dataset: str, variant: str, con: duckdb.DuckDBPyConnection):
+def check_if_dataset_exists(dataset: str, variant: str):
     """
     Check if the specified dataset and variant tables already exist in the DuckDB database.
 
     Args:
         dataset (str): The dataset name to check for.
         variant (str): The variant to check for.
-        con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
 
     Returns:
-        bool: True if the tables exist, False otherwise.
+        bool: True if the directory exists, False otherwise.
     """
-    table_name = (
+    directory_name = (
         f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     )
-    logger.debug(f"Checking if {table_name} exists in database")
-
-    tables = con.execute("SHOW TABLES").fetchall()
-    tables = [table[0] for table in tables]
-    exists = table_name in tables
-    logger.debug(f"Table {table_name} {'exists' if exists else 'does not exist'}")
+    logger.debug(f"Checking if dataset directory {directory_name} exists")
+    exists = os.path.exists(directory_name)
+    if exists:
+        logger.info(f"Dataset directory {directory_name} exists")
+    else:
+        logger.info(f"Dataset directory {directory_name} does not exist")
     return exists
 
 
 def retrieve_next_unprocessed_batch(
     dataset: str,
     variant: str,
-    con: duckdb.DuckDBPyConnection,
-    dump_to_txt: bool = False,
-):
+) -> tuple:
     """
-    Retrieve the next unprocessed batch from the DuckDB database.
+    Retrieve the next unprocessed batch from the batch directory.
 
     Args:
         dataset (str): The dataset name to retrieve the batch for.
         variant (str): The variant to retrieve the batch for.
-        con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
-        dump_to_txt (bool, optional): If True, dump the batch to a text file. Defaults to False.
 
     Returns:
-        tuple: A tuple containing a list of filepaths and the batch number, or None if no batches are left.
+        tuple: A tuple containing a filepath and the batch number, or None if no batches are left.
     """
-    table_name = (
+    directory_name = (
         f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     )
     logger.debug(f"Retrieving next unprocessed batch for {dataset}/{variant}")
 
-    result = con.execute(
-        f"SELECT batch FROM {table_name}_status WHERE collected = false LIMIT 1"
-    )
-    first_row = result.fetchone()
-
-    if first_row is None:
-        logger.info("No unprocessed batches found. Processing complete.")
+    # Get all batch files in the directory
+    batch_files = [
+        f for f in os.listdir(directory_name) if f.startswith("download_urls_batch_")
+    ]
+    logger.debug(f"Found {len(batch_files)} batch files")
+    if not batch_files:
+        logger.info("No unprocessed batches found")
         return None, None
-
-    batch_num = first_row[0]
-    logger.info(f"Found unprocessed batch: {batch_num}")
-
-    if dump_to_txt:
-        download_urls = con.execute(
-            f"SELECT download_url FROM {table_name} WHERE batch = {batch_num}"
-        ).fetchall()
-        download_urls_list = [url[0] for url in download_urls]
-
-        out_path = f"download_urls_batch_{batch_num}.txt"
-
-        with open(out_path, "w") as f:
-            for url in download_urls_list:
-                f.write(f"{url}\n")
-
-        return out_path, batch_num
-
-    else:
-        fpaths = con.execute(
-            f"SELECT filepath FROM {table_name} WHERE batch = {batch_num}"
-        ).fetchall()
-
-        fpaths_list = [fpath[0] for fpath in fpaths]
-        logger.debug(f"Batch {batch_num} contains {len(fpaths_list)} files")
-
-        return fpaths_list, batch_num
+    # Sort batch files by batch number
+    batch_files.sort(key=lambda x: int(x.split("_")[-1].split(".")[0]))
+    logger.debug(f"Sorted batch files: {batch_files}")
+    # Get the first unprocessed batch file
+    batch_file = batch_files[0]
+    batch_num = int(batch_file.split("_")[-1].split(".")[0])
+    batch_path = os.path.join(directory_name, batch_file)
+    logger.info(f"Next unprocessed batch: {batch_file}")
+    logger.debug(f"Batch file path: {batch_path}")
+    return batch_path, batch_num
 
 
-def dump_requested_batch(
+def retrieve_requested_batch(
     dataset: str,
     variant: str,
     batch_num: int,
-    con: duckdb.DuckDBPyConnection,
-    check_if_complete: bool = True,
-):
+) -> tuple:
     """
-    Dump the requested batch to a text file or return the file paths.
+    Retrieve a specific batch from the batch directory.
 
     Args:
-        dataset (str): The dataset name to dump the batch for.
-        variant (str): The variant to dump the batch for.
-        batch_num (int): The batch number to dump.
-        con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
-        check_if_complete (bool, optional): If True, check if the batch is complete. Defaults to True.
+        dataset (str): The dataset name to retrieve the batch for.
+        variant (str): The variant to retrieve the batch for.
+        batch_num (int): The batch number to retrieve.
 
     Returns:
-        list or str: A list of file paths if dump_to_txt is False, otherwise the path to the text file.
+        tuple: A tuple containing a filepath and the batch number, or None if no batches are left.
     """
-    table_name = (
+    directory_name = (
         f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     )
+    logger.debug(f"Retrieving requested batch {batch_num} for {dataset}/{variant}")
 
-    if check_if_complete:
-        result = con.execute(
-            f"SELECT collected FROM {table_name}_status WHERE batch = {batch_num}"
-        ).fetchone()
-        if result is None:
-            logger.error(f"Batch {batch_num} does not exist.")
-            return None
-        collected = result[0]
-        if collected:
-            logger.info(f"Batch {batch_num} has already been processed.")
-            return None
-        else:
-            logger.info(f"Batch {batch_num} is unprocessed.")
-
-    logger.debug(f"Dumping requested batch {batch_num} for {dataset}/{variant}")
-    download_urls = con.execute(
-        f"SELECT download_url FROM {table_name} WHERE batch = {batch_num}"
-    ).fetchall()
-    download_urls_list = [url[0] for url in download_urls]
-    out_path = f"download_urls_batch_{batch_num}.txt"
-    with open(out_path, "w") as f:
-        for url in download_urls_list:
-            f.write(f"{url}\n")
-    logger.info(f"Dumped batch {batch_num} to {out_path}")
-
-    return out_path
+    # Get all batch files in the directory
+    batch_files = [
+        f for f in os.listdir(directory_name) if f.startswith("download_urls_batch_")
+    ]
+    logger.debug(f"Found {len(batch_files)} batch files")
+    # Sort batch files by batch number
+    batch_files.sort(key=lambda x: int(x.split("_")[-1].split(".")[0]))
+    logger.debug(f"Sorted batch files: {batch_files}")
+    # Get the requested batch file
+    batch_file = f"download_urls_batch_{batch_num}.txt"
+    if batch_file not in batch_files:
+        logger.info(f"Requested batch {batch_num} not found")
+        return None, None
+    else:
+        logger.info(f"Requested batch {batch_num} found")
+        return os.path.join(directory_name, batch_file), batch_num
