@@ -6,8 +6,10 @@ import subprocess
 import sys
 
 import duckdb
+from duckdb.typing import VARCHAR
 from huggingface_hub import HfApi
 
+from src.processing import extract_domain
 from src.state_tracking import (
     dataset_rules,
     retrieve_next_unprocessed_batch,
@@ -146,6 +148,14 @@ def main():
 
         logger.debug("Mapping TLD extraction function")
         con = duckdb.connect(database=":memory:")
+        # Register the function as a UDF
+        con.create_function(
+            "extract_domain",  # Name of the UDF in SQL queries
+            extract_domain,  # The Python function to use
+            [VARCHAR],  # Input parameter type (URL as string)
+            VARCHAR,  # Return type (domain as string)
+            null_handling="special",
+        )
         con.execute(
             f"""
             COPY(
