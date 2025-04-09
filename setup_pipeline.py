@@ -68,9 +68,7 @@ def main():
     logger.info(
         f"Starting processing for dataset: {args.dataset}, variant: {args.variant}"
     )
-    logger.debug(
-        f"Using batch size: {args.batch_size} bytes, num_proc: {args.num_proc}"
-    )
+    logger.debug(f"Using batch size: {args.batch_size} bytes")
 
     # Check if dataset exists, if not, create it
     if not check_if_dataset_exists(args.dataset, args.variant):
@@ -83,3 +81,15 @@ def main():
         batch_files = [f for f in os.listdir(directory_path) if f.endswith(".txt")]
         num_batches = len(batch_files)
         logger.info(f"Found {num_batches} existing batch files in {directory_name}")
+
+    logger.info(
+        f"Finished processing for dataset: {args.dataset}, variant: {args.variant}"
+    )
+
+    return num_batches
+
+
+if __name__ == "__main__":
+    num_batches = main()
+    print("Number of batches creates:")
+    print(num_batches)

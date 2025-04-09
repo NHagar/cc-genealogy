@@ -78,6 +78,7 @@ def main():
 
     # set up caching
     os.makedirs(args.cache_dir, exist_ok=True)
+    os.makedirs(f"{args.cache_dir}_processed", exist_ok=True)
 
     # Set up logging
     logger = setup_logging()
@@ -85,9 +86,7 @@ def main():
     logger.info(
         f"Starting processing for dataset: {args.dataset}, variant: {args.variant}"
     )
-    logger.debug(
-        f"Using batch size: {args.batch_size} bytes, num_proc: {args.num_proc}"
-    )
+    logger.debug(f"Using num_proc: {args.num_proc}")
 
     # Retrieve next batch to process
     logger.info("Retrieving next unprocessed batch")
@@ -156,8 +155,7 @@ def main():
             VARCHAR,  # Return type (domain as string)
             null_handling="special",
         )
-        con.execute(
-            f"""
+        q = f"""
             COPY(
             WITH urls AS (
                 {extraction_sql} AS url
@@ -168,9 +166,10 @@ def main():
                 extract_domain(url) AS domain,
             FROM urls
             WHERE url IS NOT NULL
-            ) TO '{args.cache_dir}_processed/batch_{batch_num}.parquet;
+            ) TO '{args.cache_dir}_processed/batch_{batch_num}.parquet';
         """
-        )
+        logger.debug(f"Executing SQL query: {q}")
+        con.execute(q)
 
         # Push processed batch to HuggingFace Hub
         logger.info(f"Pushing processed batch {batch_num} to HuggingFace Hub")

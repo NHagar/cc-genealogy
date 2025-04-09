@@ -46,7 +46,7 @@ dataset_rules = {
                 ],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": """SELECT json_extract_string(replace(source_other, '''', '"'), '$.url')""",
+                "url_extraction": """SELECT REGEXP_EXTRACT(source_other, '''url''\s*:\s*''([^'']*)''', 1)""",
             }
         }
     },
@@ -149,9 +149,7 @@ def write_batch_files(
         batch_size_bytes (int, optional): Target batch size in bytes. Defaults to 100GB.
     """
     logger.info(f"Writing batch files for {dataset}/{variant}")
-    directory_name = (
-        f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
-    )
+    directory_name = f"data/{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     logger.info(f"Creating directory {directory_name} for batch files")
     os.makedirs(directory_name, exist_ok=True)
     logger.info(f"Directory {directory_name} created")
@@ -209,9 +207,7 @@ def check_if_dataset_exists(dataset: str, variant: str):
     Returns:
         bool: True if the directory exists, False otherwise.
     """
-    directory_name = (
-        f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
-    )
+    directory_name = f"data/{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     logger.debug(f"Checking if dataset directory {directory_name} exists")
     exists = os.path.exists(directory_name)
     if exists:
@@ -235,9 +231,7 @@ def retrieve_next_unprocessed_batch(
     Returns:
         tuple: A tuple containing a filepath and the batch number, or None if no batches are left.
     """
-    directory_name = (
-        f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
-    )
+    directory_name = f"data/{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     logger.debug(f"Retrieving next unprocessed batch for {dataset}/{variant}")
 
     # Get all batch files in the directory
@@ -276,9 +270,7 @@ def retrieve_requested_batch(
     Returns:
         tuple: A tuple containing a filepath and the batch number, or None if no batches are left.
     """
-    directory_name = (
-        f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
-    )
+    directory_name = f"data/{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
     logger.debug(f"Retrieving requested batch {batch_num} for {dataset}/{variant}")
 
     # Get all batch files in the directory
