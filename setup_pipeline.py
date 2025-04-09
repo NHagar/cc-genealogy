@@ -77,7 +77,7 @@ def main():
     else:
         logger.info(f"Dataset {args.dataset}/{args.variant} already exists")
         # Count number of batch files in the directory
-        directory_path = os.path.join("data", "batch_files", directory_name)
+        directory_path = os.path.join("data", directory_name)
         batch_files = [f for f in os.listdir(directory_path) if f.endswith(".txt")]
         num_batches = len(batch_files)
         logger.info(f"Found {num_batches} existing batch files in {directory_name}")
