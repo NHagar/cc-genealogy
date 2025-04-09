@@ -1,10 +1,11 @@
 import tldextract
 
 
-def get_tld(batch):
-    urls = batch["url"]
-    domains = []
-    for url in urls:
-        ext = tldextract.extract(url)
-        domains.append(ext.domain + "." + ext.suffix)
-    return {"domain": domains}
+def extract_domain(url: str) -> str:
+    if url is None:
+        return None
+    # Use tldextract to parse the URL
+    extracted = tldextract.extract(url)
+
+    # Return the full domain information as a formatted string
+    return f"{extracted.domain}.{extracted.suffix}"
