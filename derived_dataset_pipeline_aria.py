@@ -7,7 +7,6 @@ import sys
 
 import duckdb
 
-from src.processing import extract_urls, get_tld
 from src.state_tracking import (
     check_if_dataset_exists,
     construct_dataset_tables,
@@ -159,20 +158,30 @@ def main():
             sys.exit(1)  # Exit the script, Slurm will mark the job task as failed
 
         # Get URL extraction configuration for this dataset
-        extraction_config = dataset_rules[args.dataset]["variants"][args.variant][
+        suffix = dataset_rules[args.dataset]["variants"][args.variant]["suffix"]
+        extraction_sql = dataset_rules[args.dataset]["variants"][args.variant][
             "url_extraction"
         ]
-        logger.debug(f"Using URL extraction config: {extraction_config}")
-
-        # Apply flexible URL extraction
-        ds = extract_urls(ds, extraction_config, num_proc=args.num_proc)
+        if suffix == ".parquet":
+            file_read_sql = f"READ_PARQUET('{args.cache_dir}/*')"
+        else:
+            file_read_sql = f"READ_JSON('{args.cache_dir}/*', format = 'newline_delimited', compression='gzip')"
 
         logger.debug("Mapping TLD extraction function")
-        ds = ds.map(
-            get_tld,
-            batched=True,
-            num_proc=args.num_proc,
-            load_from_cache_file=False,
+        con.execute(
+            f"""
+            COPY(
+            WITH urls AS (
+                {extraction_sql} AS url
+                FROM {file_read_sql}
+            )
+            SELECT
+                url,
+                extract_domain(url) AS domain,
+            FROM urls
+            WHERE url IS NOT NULL
+            ) TO '{args.cache_dir}_processed/{batch_num}.parquet;
+        """
         )
 
         repo_id = f"nhagar/{args.dataset.split('/')[1]}_urls"
@@ -210,15 +219,8 @@ def main():
                 logger.debug(f"Removing {hub_cache_path}")
                 shutil.rmtree(hub_cache_path)
 
-        logger.info(f"Successfully processed batch {batch_num}")
+    logger.info(f"Successfully processed batch {batch_num}")
 
-        # Retrieve next batch to process
-        logger.info("Retrieving next unprocessed batch")
-        batch, batch_num = retrieve_next_unprocessed_batch(
-            args.dataset, args.variant, con
-        )
-
-    logger.info(f"Processing complete. Processed {batches_processed} batches.")
     con.close()
     logger.debug("Database connection closed")
 
