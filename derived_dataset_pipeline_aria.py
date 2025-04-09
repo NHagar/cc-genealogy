@@ -92,6 +92,7 @@ def main():
     logger.info("Retrieving next unprocessed batch")
     batch_num = os.environ.get("SLURM_ARRAY_TASK_ID")
     if batch_num:
+        batch_num = int(batch_num)
         batch_path, _ = retrieve_requested_batch(args.dataset, args.variant, batch_num)
     else:
         batch_path, batch_num = retrieve_next_unprocessed_batch(
