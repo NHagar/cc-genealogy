@@ -292,3 +292,55 @@ def retrieve_next_unprocessed_batch(
         logger.debug(f"Batch {batch_num} contains {len(fpaths_list)} files")
 
         return fpaths_list, batch_num
+
+
+def dump_requested_batch(
+    dataset: str,
+    variant: str,
+    batch_num: int,
+    con: duckdb.DuckDBPyConnection,
+    check_if_complete: bool = True,
+):
+    """
+    Dump the requested batch to a text file or return the file paths.
+
+    Args:
+        dataset (str): The dataset name to dump the batch for.
+        variant (str): The variant to dump the batch for.
+        batch_num (int): The batch number to dump.
+        con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
+        check_if_complete (bool, optional): If True, check if the batch is complete. Defaults to True.
+
+    Returns:
+        list or str: A list of file paths if dump_to_txt is False, otherwise the path to the text file.
+    """
+    table_name = (
+        f"{dataset.replace('/', '_').replace('-', '_').replace('.', '_')}_{variant}"
+    )
+
+    if check_if_complete:
+        result = con.execute(
+            f"SELECT collected FROM {table_name}_status WHERE batch = {batch_num}"
+        ).fetchone()
+        if result is None:
+            logger.error(f"Batch {batch_num} does not exist.")
+            return None
+        collected = result[0]
+        if collected:
+            logger.info(f"Batch {batch_num} has already been processed.")
+            return None
+        else:
+            logger.info(f"Batch {batch_num} is unprocessed.")
+
+    logger.debug(f"Dumping requested batch {batch_num} for {dataset}/{variant}")
+    download_urls = con.execute(
+        f"SELECT download_url FROM {table_name} WHERE batch = {batch_num}"
+    ).fetchall()
+    download_urls_list = [url[0] for url in download_urls]
+    out_path = f"download_urls_batch_{batch_num}.txt"
+    with open(out_path, "w") as f:
+        for url in download_urls_list:
+            f.write(f"{url}\n")
+    logger.info(f"Dumped batch {batch_num} to {out_path}")
+
+    return out_path
