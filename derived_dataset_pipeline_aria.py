@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 import duckdb
+from huggingface_hub import HfApi
 
 from src.state_tracking import (
     check_if_dataset_exists,
@@ -180,20 +181,30 @@ def main():
                 extract_domain(url) AS domain,
             FROM urls
             WHERE url IS NOT NULL
-            ) TO '{args.cache_dir}_processed/{batch_num}.parquet;
+            ) TO '{args.cache_dir}_processed/batch_{batch_num}.parquet;
         """
         )
 
+        # Push processed batch to HuggingFace Hub
+        logger.info(f"Pushing processed batch {batch_num} to HuggingFace Hub")
+        api = HfApi()
         repo_id = f"nhagar/{args.dataset.split('/')[1]}_urls"
-
         if args.variant != "default":
             repo_id += f"_{args.variant}"
-
-        logger.info(f"Pushing processed batch {batch_num} to HuggingFace Hub")
-        ds.push_to_hub(
+        api.create_repo(
             repo_id=repo_id,
-            data_dir=f"batch_{batch_num}",
-            max_shard_size="1GB",
+            exist_ok=True,
+            repo_type="dataset",
+        )
+        logger.debug(f"Repo ID: {repo_id}")
+
+        api.upload_file(
+            path_or_fileobj=f"{args.cache_dir}_processed/batch_{batch_num}.parquet",
+            path_in_repo=f"batch_{batch_num}.parquet",
+            repo_id=repo_id,
+            repo_type="dataset",
+            commit_message=f"Add batch {batch_num}",
+            revision="main",
         )
 
         # Update the database to mark files as collected
@@ -204,20 +215,15 @@ def main():
 
         # Clear local cache
         logger.debug(f"Cleaning up cache files in {args.cache_dir}")
-
         if os.path.exists(args.cache_dir):
-            datasets_cache_path = os.path.join(args.cache_dir, "datasets")
-            hub_cache_path = os.path.join(os.environ.get("HF_HOME"), "hub")
-            dl_cache_path = os.path.join(args.cache_dir, "dl")
-            if os.path.exists(dl_cache_path):
-                logger.debug(f"Removing {dl_cache_path}")
-                shutil.rmtree(dl_cache_path)
-            if os.path.exists(datasets_cache_path):
-                logger.debug(f"Removing {datasets_cache_path}")
-                shutil.rmtree(datasets_cache_path)
-            if os.path.exists(hub_cache_path):
-                logger.debug(f"Removing {hub_cache_path}")
-                shutil.rmtree(hub_cache_path)
+            logger.debug(f"Removing {args.cache_dir}")
+            shutil.rmtree(args.cache_dir)
+        if os.path.exists(f"{args.cache_dir}_processed"):
+            logger.debug(f"Removing {args.cache_dir}_processed")
+            shutil.rmtree(f"{args.cache_dir}_processed")
+        if os.path.exists(batch_path):
+            logger.debug(f"Removing {batch_path}")
+            os.remove(batch_path)
 
     logger.info(f"Successfully processed batch {batch_num}")
 
