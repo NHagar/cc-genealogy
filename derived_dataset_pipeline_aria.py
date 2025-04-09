@@ -136,7 +136,7 @@ def main():
             "-c",  # Resume partial downloads
             "--console-log-level=warn",  # Reduce verbosity
             "-j",
-            args.num_proc,  # Number of parallel downloads (adjust based on HPC policy/files)
+            f"{args.num_proc}",  # Number of parallel downloads (adjust based on HPC policy/files)
             # Add other aria2c options as needed
         ]
 
