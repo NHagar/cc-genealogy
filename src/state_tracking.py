@@ -13,7 +13,7 @@ dataset_rules = {
                 "prefix": ["multilingual/"],
                 "suffix": ".json.gz",
                 "exclude": "-validation",
-                "url_extraction": {"type": "direct", "column": "url"},
+                "url_extraction": "SELECT url",
             }
         }
     },
@@ -23,7 +23,7 @@ dataset_rules = {
                 "prefix": ["data/"],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": {"type": "direct", "column": "url"},
+                "url_extraction": "SELECT url",
             }
         }
     },
@@ -33,7 +33,7 @@ dataset_rules = {
                 "prefix": None,
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": {"type": "direct", "column": "url"},
+                "url_extraction": "SELECT url",
             }
         }
     },
@@ -46,11 +46,7 @@ dataset_rules = {
                 ],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": {
-                    "type": "eval_dict",
-                    "column": "source_other",
-                    "field": "url",
-                },
+                "url_extraction": """SELECT json_extract_string(replace(source_other, '''', '"'), '$.url')""",
             }
         }
     },
@@ -60,7 +56,7 @@ dataset_rules = {
                 "prefix": ["data/"],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": {"type": "direct", "column": "url"},
+                "url_extraction": "SELECT url",
             }
         }
     },
@@ -70,7 +66,7 @@ dataset_rules = {
                 "prefix": ["data/"],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": {"type": "direct", "column": "url"},
+                "url_extraction": "SELECT url",
             }
         }
     },
@@ -80,7 +76,7 @@ dataset_rules = {
                 "prefix": ["filtered/"],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": {"type": "direct", "column": "url"},
+                "url_extraction": "SELECT url",
             }
         }
     },
