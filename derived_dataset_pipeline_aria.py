@@ -9,11 +9,9 @@ import duckdb
 from huggingface_hub import HfApi
 
 from src.state_tracking import (
-    check_if_dataset_exists,
-    construct_dataset_tables,
     dataset_rules,
-    dump_requested_batch,
     retrieve_next_unprocessed_batch,
+    retrieve_requested_batch,
 )
 
 
@@ -62,12 +60,6 @@ def main():
         help="Dataset variant to process",
     )
     parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=100_000_000_000,
-        help="Target batch size in bytes (default: 100GB)",
-    )
-    parser.add_argument(
         "--num-proc",
         type=int,
         default=4,
@@ -95,30 +87,14 @@ def main():
         f"Using batch size: {args.batch_size} bytes, num_proc: {args.num_proc}"
     )
 
-    dataset_name_clean = (
-        args.dataset.replace("/", "_").replace("-", "_").replace(".", "_")
-    )
-
-    # Connect to the database
-    logger.info("Connecting to database")
-    con = duckdb.connect(f"data/{dataset_name_clean}_{args.variant}")
-    logger.debug("Database connection successful")
-
-    # Check if dataset exists, if not, create it
-    if not check_if_dataset_exists(args.dataset, args.variant, con):
-        logger.info(f"Dataset {args.dataset}/{args.variant} not found, creating tables")
-        construct_dataset_tables(args.dataset, args.variant, con, args.batch_size)
-    else:
-        logger.info(f"Dataset {args.dataset}/{args.variant} already exists")
-
     # Retrieve next batch to process
     logger.info("Retrieving next unprocessed batch")
     batch_num = os.environ.get("SLURM_ARRAY_TASK_ID")
     if batch_num:
-        batch_path = dump_requested_batch(args.dataset, args.variant, batch_num, con)
+        batch_path, _ = retrieve_requested_batch(args.dataset, args.variant, batch_num)
     else:
         batch_path, batch_num = retrieve_next_unprocessed_batch(
-            args.dataset, args.variant, con, dump_to_txt=True
+            args.dataset, args.variant
         )
 
     if batch_path is not None:
@@ -169,6 +145,7 @@ def main():
             file_read_sql = f"READ_JSON('{args.cache_dir}/*', format = 'newline_delimited', compression='gzip')"
 
         logger.debug("Mapping TLD extraction function")
+        con = duckdb.connect(database=":memory:")
         con.execute(
             f"""
             COPY(
@@ -205,12 +182,6 @@ def main():
             repo_type="dataset",
             commit_message=f"Add batch {batch_num}",
             revision="main",
-        )
-
-        # Update the database to mark files as collected
-        logger.debug(f"Marking batch {batch_num} as collected in database")
-        con.execute(
-            f"UPDATE {dataset_name_clean}_{args.variant}_status SET collected = true WHERE batch = {batch_num}"
         )
 
         # Clear local cache
