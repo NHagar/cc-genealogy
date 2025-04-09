@@ -119,7 +119,7 @@ def assign_batches(files, target_batch_size_bytes=100_000_000_000):
     file_to_batch = {}
     for batch_idx, batch in enumerate(batches):
         for file in batch:
-            file_to_batch[file.path] = batch_idx
+            file_to_batch[file.path] = batch_idx + 1  # Start batch numbering from 1
 
     # Create result with file path and batch number
     result = [(file.path, file_to_batch[file.path], file.size) for file in files]
@@ -160,7 +160,9 @@ def construct_dataset_tables(
     )
     logger.info(f"Creating tables for {dataset}/{variant}")
 
-    con.execute(f"CREATE TABLE {table_name} (filepath VARCHAR, batch INT)")
+    con.execute(
+        f"CREATE TABLE {table_name} (filepath VARCHAR, download_url VARCHAR, batch INT)"
+    )
     con.execute(f"CREATE TABLE {table_name}_status (batch INT, collected BOOLEAN)")
     logger.debug(f"Created tables {table_name} and {table_name}_status")
 
@@ -196,7 +198,7 @@ def construct_dataset_tables(
 
     logger.debug(f"Inserting {len(batch_assignments)} file entries into {table_name}")
     con.execute(
-        f"INSERT INTO {table_name} VALUES {','.join([f"('{fpath}', {batch})" for fpath, batch, _ in batch_assignments])}"
+        f"INSERT INTO {table_name} VALUES {','.join([f"('{fpath}', 'https://huggingface.co/datasets/{dataset}/resolve/main/{fpath}', {batch})" for fpath, batch, _ in batch_assignments])}"
     )
 
     logger.debug(
@@ -233,7 +235,10 @@ def check_if_dataset_exists(dataset: str, variant: str, con: duckdb.DuckDBPyConn
 
 
 def retrieve_next_unprocessed_batch(
-    dataset: str, variant: str, con: duckdb.DuckDBPyConnection
+    dataset: str,
+    variant: str,
+    con: duckdb.DuckDBPyConnection,
+    dump_to_txt: bool = False,
 ):
     """
     Retrieve the next unprocessed batch from the DuckDB database.
@@ -242,6 +247,7 @@ def retrieve_next_unprocessed_batch(
         dataset (str): The dataset name to retrieve the batch for.
         variant (str): The variant to retrieve the batch for.
         con (duckdb.DuckDBPyConnection): The connection to the DuckDB database.
+        dump_to_txt (bool, optional): If True, dump the batch to a text file. Defaults to False.
 
     Returns:
         tuple: A tuple containing a list of filepaths and the batch number, or None if no batches are left.
@@ -263,11 +269,26 @@ def retrieve_next_unprocessed_batch(
     batch_num = first_row[0]
     logger.info(f"Found unprocessed batch: {batch_num}")
 
-    fpaths = con.execute(
-        f"SELECT filepath FROM {table_name} WHERE batch = {batch_num}"
-    ).fetchall()
+    if dump_to_txt:
+        download_urls = con.execute(
+            f"SELECT download_url FROM {table_name} WHERE batch = {batch_num}"
+        ).fetchall()
+        download_urls_list = [url[0] for url in download_urls]
 
-    fpaths_list = [fpath[0] for fpath in fpaths]
-    logger.debug(f"Batch {batch_num} contains {len(fpaths_list)} files")
+        out_path = f"download_urls_batch_{batch_num}.txt"
 
-    return fpaths_list, batch_num
+        with open(out_path, "w") as f:
+            for url in download_urls_list:
+                f.write(f"{url}\n")
+
+        return out_path, batch_num
+
+    else:
+        fpaths = con.execute(
+            f"SELECT filepath FROM {table_name} WHERE batch = {batch_num}"
+        ).fetchall()
+
+        fpaths_list = [fpath[0] for fpath in fpaths]
+        logger.debug(f"Batch {batch_num} contains {len(fpaths_list)} files")
+
+        return fpaths_list, batch_num
