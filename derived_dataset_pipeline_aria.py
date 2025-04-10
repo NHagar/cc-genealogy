@@ -17,7 +17,7 @@ from src.state_tracking import (
 )
 
 
-def setup_logging():
+def setup_logging(batch_num):
     """Set up logging configuration"""
     # Create logs directory if it doesn't exist
     os.makedirs("logs", exist_ok=True)
@@ -33,7 +33,10 @@ def setup_logging():
     console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
     # Configure file handler
-    file_handler = logging.FileHandler("logs/processing.log")
+    if batch_num:
+        file_handler = logging.FileHandler(f"logs/processing_{batch_num}.log")
+    else:
+        file_handler = logging.FileHandler("logs/processing.log")
     file_handler.setFormatter(file_formatter)
     file_handler.setLevel(logging.INFO)
 
@@ -50,9 +53,11 @@ def setup_logging():
 
 
 def main():
+    batch_num = os.environ.get("SLURM_ARRAY_TASK_ID")
     # Set up logging
-    logger = setup_logging()
+    logger = setup_logging(batch_num)
     logger.info("Starting dataset processing script")
+    logger.info(f"Batch number: {batch_num}")
 
     parser = argparse.ArgumentParser(description="Download and process dataset batches")
     parser.add_argument(
@@ -91,7 +96,6 @@ def main():
 
     # Retrieve next batch to process
     logger.info("Retrieving next unprocessed batch")
-    batch_num = os.environ.get("SLURM_ARRAY_TASK_ID")
     if batch_num:
         batch_num = int(batch_num)
         batch_path, _ = retrieve_requested_batch(args.dataset, args.variant, batch_num)
