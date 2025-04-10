@@ -131,6 +131,18 @@ echo "DEBUG: Running uv command..."
 which uv # Check if uv is found after conda activation
 which aria2c # Check if aria2c is found after conda activation
 
+# --- Print the exact command before execution ---
+echo "DEBUG: Preparing to execute the following command:"
+# Use 'printf' for potentially better handling of weird characters than 'echo'
+printf "uv run %s --dataset %s --variant %s --num-proc %s --cache-dir %s\n" \
+    "$PROCESSING_SCRIPT" \
+    "$DATASET" \
+    "$VARIANT" \
+    "\$SLURM_CPUS_PER_TASK" \
+    "\$TASK_CACHE_DIR"
+echo "---------------------------------------------"
+
+
 uv run $PROCESSING_SCRIPT \\
     --dataset "$DATASET" \\
     --variant "$VARIANT" \\
