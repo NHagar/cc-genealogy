@@ -50,6 +50,10 @@ def setup_logging():
 
 
 def main():
+    # Set up logging
+    logger = setup_logging()
+    logger.info("Starting dataset processing script")
+
     parser = argparse.ArgumentParser(description="Download and process dataset batches")
     parser.add_argument(
         "--dataset",
@@ -79,9 +83,6 @@ def main():
     # set up caching
     os.makedirs(args.cache_dir, exist_ok=True)
     os.makedirs(f"{args.cache_dir}_processed", exist_ok=True)
-
-    # Set up logging
-    logger = setup_logging()
 
     logger.info(
         f"Starting processing for dataset: {args.dataset}, variant: {args.variant}"
