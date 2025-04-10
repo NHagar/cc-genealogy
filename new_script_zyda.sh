@@ -72,7 +72,7 @@ echo "Submitting Slurm array job (1-$num_batches with max ${CONCURRENCY} concurr
 
 # Define the script/command that your array tasks will run
 # Assuming your main processing script is pipeline.py and accepts necessary args
-PROCESSING_SCRIPT="derived_dataset_pipeline.py" # Your main processing python script
+PROCESSING_SCRIPT="derived_dataset_pipeline_aria.py" # Your main processing python script
 
 sbatch_output=$(sbatch <<EOF
 #!/bin/bash
