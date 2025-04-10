@@ -2,7 +2,7 @@
 
 # --- Configuration ---
 # You can make these command-line arguments for the wrapper script too
-DATASET="zyphra/zyda"
+DATASET="zyphra/zyda-2"
 VARIANT="default"
 BATCH_SIZE=100000000000
 CONCURRENCY=8 # Max parallel array tasks Slurm should run
@@ -12,7 +12,7 @@ CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
 VARIANT_NAME="$VARIANT"
 STATUS_DIR="data/status/${CLEAN_DS_NAME}_${VARIANT_NAME}"
 LOG_DIR="logs"
-CACHE_DIR_BASE=/scratch/nrh146/cache-zyda # Base dir for cache
+CACHE_DIR_BASE=/scratch/nrh146/cache-zyda2 # Base dir for cache
 
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
@@ -77,13 +77,14 @@ sbatch_output=$(sbatch <<EOF
 #!/bin/bash
 #SBATCH --account=p32491  ## YOUR ACCOUNT pXXXX or bXXXX
 #SBATCH --partition=normal  ### PARTITION (buyin, short, normal, etc)
-#SBATCH --ntasks-per-node=8 ## how many cpus or processors do you need on each computer
 #SBATCH --job-name="proc_${CLEAN_DS_NAME}_${VARIANT_NAME}"
 #SBATCH --array=1-${num_batches}%${CONCURRENCY}
 #SBATCH --output="${LOG_DIR}/slurm-%A_%a.out"  # %A=jobid, %a=taskid
 #SBATCH --error="${LOG_DIR}/slurm-%A_%a.err"
 #SBATCH --nodes=1                # Ensure tasks run on single nodes unless needed otherwise
-#SBATCH --mem-per-cpu=8G ## how much RAM do you need per node (this effects your FairShare score so be careful to not ask for more than you need))
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
 #SBATCH --time=48:00:00 ## how long does this need to run (remember different partitions have restrictions on this parameter)
 #SBATCH --mail-user=nicholas.hagar@northwestern.edu
 #SBATCH --mail-type=ALL
@@ -93,6 +94,7 @@ echo "Dataset: $DATASET"
 echo "Variant: $VARIANT"
 
 module purge all
+module load anaconda3
 conda activate aria2-env
 
 uv run $PROCESSING_SCRIPT \\
