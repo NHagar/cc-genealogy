@@ -143,10 +143,10 @@ printf "uv run %s --dataset %s --variant %s --num-proc %s --cache-dir %s\n" \
 echo "---------------------------------------------"
 
 
-uv run $PROCESSING_SCRIPT \\
+uv run "$PROCESSING_SCRIPT" \\
     --dataset "$DATASET" \\
     --variant "$VARIANT" \\
-    --num-proc \$SLURM_CPUS_PER_TASK \\
+    --num-proc "\$SLURM_CPUS_PER_TASK" \\
     --cache-dir "\$TASK_CACHE_DIR"
 
 EXIT_CODE=\$?
