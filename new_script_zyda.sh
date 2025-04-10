@@ -10,7 +10,6 @@ CONCURRENCY=8 # Max parallel array tasks Slurm should run
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
 VARIANT_NAME="$VARIANT"
-BATCH_FILE_DIR="data/batch_files/${CLEAN_DS_NAME}_${VARIANT_NAME}"
 STATUS_DIR="data/status/${CLEAN_DS_NAME}_${VARIANT_NAME}"
 LOG_DIR="logs"
 CACHE_DIR_BASE=/scratch/nrh146/cache-zyda # Base dir for cache
@@ -100,7 +99,7 @@ uv run $PROCESSING_SCRIPT \\
     --dataset "$DATASET" \\
     --variant "$VARIANT" \\
     --num-proc \$SLURM_CPUS_PER_TASK \\
-    --cache-dir "${CACHE_DIR_BASE}" \\
+    --cache-dir "${CACHE_DIR_BASE}"
 
 echo "Finished Slurm task \$SLURM_ARRAY_TASK_ID"
 EOF
