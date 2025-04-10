@@ -5,7 +5,7 @@
 DATASET="zyphra/zyda-2"
 VARIANT="default"
 BATCH_SIZE=100000000000
-CONCURRENCY=8 # Max parallel array tasks Slurm should run
+CONCURRENCY=2 # Max parallel array tasks Slurm should run
 
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
@@ -83,8 +83,8 @@ sbatch_output=$(sbatch <<EOF
 #SBATCH --error="${LOG_DIR}/slurm-%A_%a.err"
 #SBATCH --nodes=1                # Ensure tasks run on single nodes unless needed otherwise
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
 #SBATCH --time=48:00:00 ## how long does this need to run (remember different partitions have restrictions on this parameter)
 #SBATCH --mail-user=nicholas.hagar@northwestern.edu
 #SBATCH --mail-type=ALL
