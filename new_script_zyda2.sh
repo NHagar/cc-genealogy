@@ -134,7 +134,7 @@ which aria2c # Check if aria2c is found after conda activation
 # --- Print the exact command before execution ---
 echo "DEBUG: Preparing to execute the following command:"
 # Use 'printf' for potentially better handling of weird characters than 'echo'
-printf "uv run %s --dataset %s --variant %s --num-proc %s --cache-dir %s\n" \
+printf "uv run python %s --dataset %s --variant %s --num-proc %s --cache-dir %s\n" \
     "$PROCESSING_SCRIPT" \
     "$DATASET" \
     "$VARIANT" \
@@ -143,10 +143,10 @@ printf "uv run %s --dataset %s --variant %s --num-proc %s --cache-dir %s\n" \
 echo "---------------------------------------------"
 
 
-uv run "$PROCESSING_SCRIPT" \\
-    --dataset "$DATASET" \\
-    --variant "$VARIANT" \\
-    --num-proc "\$SLURM_CPUS_PER_TASK" \\
+uv run python "$PROCESSING_SCRIPT" \
+    --dataset "$DATASET" \
+    --variant "$VARIANT" \
+    --num-proc "\$SLURM_CPUS_PER_TASK" \
     --cache-dir "\$TASK_CACHE_DIR"
 
 EXIT_CODE=\$?
