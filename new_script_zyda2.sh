@@ -4,8 +4,8 @@
 # You can make these command-line arguments for the wrapper script too
 DATASET="zyphra/zyda-2"
 VARIANT="default"
-BATCH_SIZE=100000000000
-CONCURRENCY=2 # Max parallel array tasks Slurm should run
+BATCH_SIZE=500000000000
+CONCURRENCY=1 # Max parallel array tasks Slurm should run
 
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
