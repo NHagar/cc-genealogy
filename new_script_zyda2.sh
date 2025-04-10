@@ -90,18 +90,58 @@ sbatch_output=$(sbatch <<EOF
 #SBATCH --mail-type=ALL
 
 echo "Starting Slurm task \$SLURM_ARRAY_TASK_ID for job \$SLURM_ARRAY_JOB_ID"
-echo "Dataset: $DATASET"
-echo "Variant: $VARIANT"
+echo "Node: \$(hostname)"
+echo "Requesting 1 task with \$SLURM_CPUS_PER_TASK CPUs."
+
+# Create a unique cache directory for this task
+TASK_CACHE_DIR="${CACHE_DIR_BASE}/task_\$SLURM_ARRAY_TASK_ID"
+mkdir -p "\$TASK_CACHE_DIR"
+if [ \$? -ne 0 ]; then
+  echo "Error: Failed to create task cache directory: \$TASK_CACHE_DIR"
+  exit 1
+fi
+echo "Using cache directory: \$TASK_CACHE_DIR"
+
 
 module purge all
-module load anaconda3
+
+# --- Initialize Conda directly using the script path from the error message ---
+echo "Sourcing Conda initialization script..."
+source /software/anaconda3/2018.12/etc/profile.d/conda.sh
+if [ \$? -ne 0 ]; then
+  echo "Error: Failed to source conda.sh"
+  exit 1
+fi
+# ---------------------------------------------------------------------------
+
+echo "Activating Conda environment 'aria2-env'..."
 conda activate aria2-env
+if [ \$? -ne 0 ]; then
+  echo "Error: Failed to activate conda environment 'aria2-env'. Check if it exists and was created with this Conda installation."
+  exit 1
+fi
+
+echo "DEBUG: Value of SLURM_CPUS_PER_TASK before uv run: [\$SLURM_CPUS_PER_TASK]"
+if [ -z "\$SLURM_CPUS_PER_TASK" ] || [[ "\$SLURM_CPUS_PER_TASK" =~ ^[[:space:]]*$ ]]; then
+    echo "Error: SLURM_CPUS_PER_TASK is empty or whitespace. Exiting."
+    exit 1
+fi
+
+echo "DEBUG: Running uv command..."
+which uv # Check if uv is found after conda activation
+which aria2c # Check if aria2c is found after conda activation
 
 uv run $PROCESSING_SCRIPT \\
     --dataset "$DATASET" \\
     --variant "$VARIANT" \\
     --num-proc \$SLURM_CPUS_PER_TASK \\
-    --cache-dir "${CACHE_DIR_BASE}"
+    --cache-dir "\$TASK_CACHE_DIR"
+
+EXIT_CODE=\$?
+echo "Processing script finished with exit code: \$EXIT_CODE"
+
+echo "Deactivating Conda environment (good practice)..."
+conda deactivate
 
 echo "Finished Slurm task \$SLURM_ARRAY_TASK_ID"
 EOF
