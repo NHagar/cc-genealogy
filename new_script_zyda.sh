@@ -94,6 +94,7 @@ echo "Dataset: $DATASET"
 echo "Variant: $VARIANT"
 
 module purge all
+conda activate aria2-env
 
 uv run $PROCESSING_SCRIPT \\
     --dataset "$DATASET" \\
