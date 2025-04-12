@@ -41,8 +41,8 @@ dataset_rules = {
         "variants": {
             "default": {
                 "prefix": [
-                    "data/zyda_no_starcoder/zyda_c4-en",
-                    "data/zyda_no_starcoder/zyda_refinedweb",
+                    "data/zyda_no_starcoder/zyda_c4-en/",
+                    "data/zyda_no_starcoder/zyda_refinedweb/",
                 ],
                 "suffix": ".parquet",
                 "exclude": None,
@@ -52,12 +52,33 @@ dataset_rules = {
     },
     "zyphra/zyda-2": {
         "variants": {
-            "default": {
-                "prefix": ["data/"],
+            "dclm_crossdeduped": {
+                "prefix": ["data/dclm_crossdeduped/"],
                 "suffix": ".parquet",
                 "exclude": None,
                 "url_extraction": "SELECT url",
-            }
+            },
+            "dolma-cc_crossdeduped-filtered": {
+                "prefix": ["data/dolma-cc_crossdeduped-filtered/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT id",
+            },
+            "fwe3": {
+                "prefix": ["data/fwe3/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            },
+            "zyda_crossdeduped-filtered": {
+                "prefix": [
+                    "data/zyda_crossdeduped-filtered/zyda_c4-en/",
+                    "data/zyda_crossdeduped-filtered/zyda_refinedweb/",
+                ],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            },
         }
     },
     "zyphra/dclm-dedup": {
