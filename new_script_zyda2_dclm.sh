@@ -3,7 +3,7 @@
 # --- Configuration ---
 # You can make these command-line arguments for the wrapper script too
 DATASET="zyphra/zyda-2"
-VARIANT="default"
+VARIANT="dclm_crossdeduped"
 BATCH_SIZE=500000000000
 CONCURRENCY=1 # Max parallel array tasks Slurm should run
 
