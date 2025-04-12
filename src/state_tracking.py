@@ -77,7 +77,7 @@ dataset_rules = {
                 ],
                 "suffix": ".parquet",
                 "exclude": None,
-                "url_extraction": "SELECT url",
+                "url_extraction": """SELECT REGEXP_EXTRACT(source_other, '''url''\s*:\s*''([^'']*)''', 1)""",
             },
         }
     },
