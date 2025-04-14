@@ -203,15 +203,11 @@ def write_batch_files(
         f"Inserting {len(batch_assignments)} file entries into {directory_name}"
     )
     for batch_num in batch_nums:
-        batch_files = [
-            f"https://huggingface.co/datasets/{dataset}/resolve/main/{fpath}"
-            for fpath, batch, _ in batch_assignments
-            if batch == batch_num
-        ]
+        fpaths = [i[0] for i in batch_assignments if i[1] == batch_num]
         out_path = os.path.join(directory_name, f"download_urls_batch_{batch_num}.txt")
         with open(out_path, "w") as f:
-            for url in batch_files:
-                f.write(f"{url}\n")
+            for fp in fpaths:
+                f.write(f"{fp}\n")
 
     logger.info(f"Batch files written to {directory_name}")
     return len(batch_nums)
