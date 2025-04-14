@@ -138,10 +138,10 @@ temp_include_file=$(mktemp)
 # Process the batch file and store paths in the temporary file
 while IFS= read -r path; do
   # Skip empty lines or lines that look like comments
-  [[ -z "$path" || "$path" =~ ^# ]] && continue
+  [[ -z "\$path" || "\$path" =~ ^# ]] && continue
   # Write the path to the temp file
-  echo "$path" >> "$temp_include_file"
-done < "$batchfile"
+  echo "\$path" >> "\$temp_include_file"
+done < "\$batchfile"
 
 # Check if we have any paths
 if [ ! -s "$temp_include_file" ]; then
