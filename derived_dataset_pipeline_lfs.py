@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import shutil
 import sys
 
 import duckdb
@@ -172,9 +171,11 @@ def main():
             if os.path.exists(file_path):
                 logger.debug(f"Removing {file_path}")
                 os.remove(file_path)
-        if os.path.exists(f"{args.cache_dir}/processed"):
-            logger.debug(f"Removing {args.cache_dir}/processed")
-            shutil.rmtree(f"{args.cache_dir}/processed")
+        if os.path.exists(f"{args.cache_dir}/processed/batch_{batch_num}.parquet"):
+            logger.debug(
+                f"Removing {args.cache_dir}/processed/batch_{batch_num}.parquet"
+            )
+            os.remove(f"{args.cache_dir}/processed/batch_{batch_num}.parquet")
         if os.path.exists(batch_path):
             logger.debug(f"Removing {batch_path}")
             os.remove(batch_path)
