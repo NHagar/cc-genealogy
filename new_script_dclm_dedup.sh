@@ -144,16 +144,16 @@ while IFS= read -r path; do
 done < "\$batchfile"
 
 # Check if we have any paths
-if [ ! -s "$temp_include_file" ]; then
-  echo "No valid file paths found in $batchfile"
-  rm "$temp_include_file"
+if [ ! -s "\$temp_include_file" ]; then
+  echo "No valid file paths found in \$batchfile"
+  rm "\$temp_include_file"
   exit 1
 fi
 
 # --- Step 4: Run git lfs pull ---
 cd ${CACHE_DIR} || {
-  echo "Error: Failed to change directory to $CACHE_DIR."
-  rm "$temp_include_file" # Clean up temp file
+  echo "Error: Failed to change directory to ${CACHE_DIR}."
+  rm "\$temp_include_file" # Clean up temp file
   exit 1
 }
 
@@ -162,34 +162,34 @@ BATCH_PATH_LIMIT=1000
 echo "Running git lfs pull with comma-separated paths (batch size: $BATCH_PATH_LIMIT)..."
 
 # Process the files in batches using xargs
-cat "$temp_include_file" | xargs -n $BATCH_PATH_LIMIT sh -c '
+cat "\$temp_include_file" | xargs -n \$BATCH_PATH_LIMIT sh -c '
     # Count files properly using number of arguments
-    file_count=$#
-    echo "Pulling batch of ${file_count} files..."
+    file_count=\$#
+    echo "Pulling batch of \${file_count} files..."
     
     # Create a properly escaped comma-separated list
     paths=""
-    for file in "$@"; do
-        if [ -z "$paths" ]; then
-            paths="$file"
+    for file in "\$@"; do
+        if [ -z "\$paths" ]; then
+            paths="\$file"
         else
-            paths="$paths,$file"
+            paths="\$paths,\$file"
         fi
     done
     
     # Execute git lfs pull with the single --include flag and comma-separated list
-    git lfs pull --include="$paths"
+    git lfs pull --include="\$paths"
 ' _ || {
     echo "Error: git lfs pull with comma-separated paths failed."
     cd - > /dev/null
-    rm "$temp_include_file"
+    rm "\$temp_include_file"
     exit 1
 }
 
 echo "git lfs pull completed successfully."
 
 # Clean up the temporary file
-rm "$temp_include_file"
+rm "\$temp_include_file"
 
 # cd back to the original directory
 cd - || exit 1
