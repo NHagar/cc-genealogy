@@ -159,7 +159,7 @@ cd ${CACHE_DIR} || {
 
 BATCH_PATH_LIMIT=1000
 
-echo "Running git lfs pull with comma-separated paths (batch size: $BATCH_PATH_LIMIT)..."
+echo "Running git lfs pull with comma-separated paths (batch size: \$BATCH_PATH_LIMIT)..."
 
 # Process the files in batches using xargs
 cat "\$temp_include_file" | xargs -n \$BATCH_PATH_LIMIT sh -c '
