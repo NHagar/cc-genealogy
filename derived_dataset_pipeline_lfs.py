@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 import shutil
-import subprocess
 import sys
 
 import duckdb
@@ -71,12 +70,6 @@ def main():
         help="Dataset variant to process",
     )
     parser.add_argument(
-        "--num-proc",
-        type=int,
-        default=4,
-        help="Number of processes to use (default: 4)",
-    )
-    parser.add_argument(
         "--cache-dir",
         type=str,
         default="data/cache",
@@ -86,14 +79,11 @@ def main():
     args = parser.parse_args()
 
     # set up caching
-    os.makedirs(args.cache_dir, exist_ok=True)
-    os.makedirs(f"{args.cache_dir}_processed", exist_ok=True)
+    os.makedirs(f"{args.cache_dir}/processed", exist_ok=True)
 
     logger.info(
         f"Starting processing for dataset: {args.dataset}, variant: {args.variant}"
     )
-    logger.debug(f"Using num_proc: {args.num_proc}")
-
     # Retrieve next batch to process
     logger.info("Retrieving next unprocessed batch")
     if batch_num:
@@ -107,49 +97,24 @@ def main():
     if batch_path is not None:
         logger.info(f"Processing batch {batch_num}")
 
-        logger.debug(f"Loading dataset from batch {batch_num}")
-
-        logger.info(f"Starting download for chunk {batch_num}...")
-        aria_command = [
-            "aria2c",
-            "-i",
-            batch_path,  # Input file with URLs
-            "-d",
-            args.cache_dir,  # Destination directory
-            "-c",  # Resume partial downloads
-            "--console-log-level=warn",  # Reduce verbosity
-            "-j",
-            f"{args.num_proc}",  # Number of parallel downloads (adjust based on HPC policy/files)
-            # Add other aria2c options as needed
-        ]
-
-        try:
-            # Run aria2c and wait for it to complete
-            result = subprocess.run(
-                aria_command, check=True, capture_output=True, text=True
-            )
-            logger.info(f"aria2c stdout for chunk {batch_num}:\n{result.stdout}")
-            logger.info(f"aria2c stderr for chunk {batch_num}:\n{result.stderr}")
-            logger.info(f"Download completed successfully for chunk {batch_num}.")
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Error during aria2c download for chunk {batch_num}!")
-            logger.error(f"Return code: {e.returncode}")
-            logger.error(f"Stdout: {e.stdout}")
-            logger.error(f"Stderr: {e.stderr}")
-            # Clean up url list file before exiting?
-            # os.remove(url_list_file)
-            sys.exit(1)  # Exit the script, Slurm will mark the job task as failed
+        with open(batch_path, "r") as f:
+            fpaths = f.readlines()
+        fpaths = [f.strip() for f in fpaths]
 
         # Get URL extraction configuration for this dataset
         suffix = dataset_rules[args.dataset]["variants"][args.variant]["suffix"]
         extraction_sql = dataset_rules[args.dataset]["variants"][args.variant][
             "url_extraction"
         ]
+
+        # Prepare the file paths for the SQL IN clause
+        formatted_paths = [f"'{args.cache_dir}/repo/{fpath}'" for fpath in fpaths]
+        paths_string = ", ".join(formatted_paths)
+
         if suffix == ".parquet":
-            file_read_sql = f"READ_PARQUET('{args.cache_dir}/*')"
+            file_read_sql = f"READ_PARQUET([{paths_string}])"
         else:
-            file_read_sql = f"READ_JSON('{args.cache_dir}/*', format = 'newline_delimited', compression='gzip')"
+            file_read_sql = f"READ_JSON([{paths_string}], format = 'newline_delimited', compression='gzip')"
 
         logger.debug("Mapping TLD extraction function")
         con = duckdb.connect(database=":memory:")
@@ -172,7 +137,7 @@ def main():
                 extract_domain(url) AS domain,
             FROM urls
             WHERE url IS NOT NULL
-            ) TO '{args.cache_dir}_processed/batch_{batch_num}.parquet';
+            ) TO '{args.cache_dir}/processed/batch_{batch_num}.parquet';
         """
         logger.debug(f"Executing SQL query: {q}")
         con.execute(q)
@@ -191,7 +156,7 @@ def main():
         logger.debug(f"Repo ID: {repo_id}")
 
         api.upload_file(
-            path_or_fileobj=f"{args.cache_dir}_processed/batch_{batch_num}.parquet",
+            path_or_fileobj=f"{args.cache_dir}/processed/batch_{batch_num}.parquet",
             path_in_repo=f"batch_{batch_num}.parquet",
             repo_id=repo_id,
             repo_type="dataset",
@@ -201,12 +166,15 @@ def main():
 
         # Clear local cache
         logger.debug(f"Cleaning up cache files in {args.cache_dir}")
-        if os.path.exists(args.cache_dir):
-            logger.debug(f"Removing {args.cache_dir}")
-            shutil.rmtree(args.cache_dir)
-        if os.path.exists(f"{args.cache_dir}_processed"):
-            logger.debug(f"Removing {args.cache_dir}_processed")
-            shutil.rmtree(f"{args.cache_dir}_processed")
+        # Remove individual files from this batch to save space
+        for fpath in fpaths:
+            file_path = f"{args.cache_dir}/repo/{fpath}"
+            if os.path.exists(file_path):
+                logger.debug(f"Removing {file_path}")
+                os.remove(file_path)
+        if os.path.exists(f"{args.cache_dir}/processed"):
+            logger.debug(f"Removing {args.cache_dir}/processed")
+            shutil.rmtree(f"{args.cache_dir}/processed")
         if os.path.exists(batch_path):
             logger.debug(f"Removing {batch_path}")
             os.remove(batch_path)

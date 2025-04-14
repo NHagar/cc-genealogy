@@ -47,7 +47,32 @@ if [ $setup_exit_code -ne 0 ]; then
   exit 1
 fi
 
-# --- Step 2: Extract Batch Count ---
+# --- Step 2: Clone repo to cache dir (if needed) ---
+# Check if the cache directory already exists
+# Set the repo URL 
+REPO_URL="https://huggingface.co/datasets/${DATASET}"  # Replace with actual repo URL
+
+# Set the full cache directory path
+CACHE_DIR="${CACHE_DIR_BASE}/repo"
+
+# Check if the cache directory already exists
+if [ -d "$CACHE_DIR" ]; then
+  echo "Cache directory already exists at $CACHE_DIR. Skipping clone."
+else
+  echo "Cache directory not found. Cloning repository to $CACHE_DIR..."
+  GIT_LFS_SKIP_SMUDGE=1 git clone "$REPO_URL" "$CACHE_DIR"
+  
+  if [ $? -ne 0 ]; then
+    echo "Error: Failed to clone repository. Aborting."
+    exit 1
+  fi
+  
+  echo "Repository successfully cloned to cache directory."
+
+fi
+
+
+# --- Step 3: Extract Batch Count ---
 # Extract the last line of the output, which should be the number
 num_batches=$(echo "$setup_output" | tail -n 1)
 
@@ -66,12 +91,12 @@ fi
 echo
 echo "Setup successful. Found $num_batches batches."
 
-# --- Step 3: Submit Slurm Array Job ---
+# --- Step 4: Submit Slurm Array Job ---
 echo "Submitting Slurm array job (1-$num_batches with max ${CONCURRENCY} concurrent tasks)..."
 
 # Define the script/command that your array tasks will run
 # Assuming your main processing script is pipeline.py and accepts necessary args
-PROCESSING_SCRIPT="derived_dataset_pipeline_aria.py" # Your main processing python script
+PROCESSING_SCRIPT="derived_dataset_pipeline_lfs.py" # Your main processing python script
 
 sbatch_output=$(sbatch <<EOF
 #!/bin/bash
