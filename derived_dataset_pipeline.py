@@ -100,7 +100,7 @@ def main():
 
     # Connect to the database
     logger.info("Connecting to database")
-    con = duckdb.connect(f"data/{dataset_name_clean}_{args.variant}")
+    con = duckdb.connect(f"data/{dataset_name_clean}_{args.variant}.db")
     logger.debug("Database connection successful")
 
     # Check if dataset exists, if not, create it
