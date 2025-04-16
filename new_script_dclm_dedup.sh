@@ -7,13 +7,13 @@ DATASET="zyphra/dclm-dedup"
 VARIANT="default"
 BATCH_SIZE=500000000000
 CONCURRENCY=1 # Max parallel array tasks Slurm should run
+CACHE_DIR_BASE=/scratch/nrh146/cache-dclm_dedup # Base dir for cache
 
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
 VARIANT_NAME="$VARIANT"
 STATUS_DIR="data/status/${CLEAN_DS_NAME}_${VARIANT_NAME}"
 LOG_DIR="logs"
-CACHE_DIR_BASE=/scratch/nrh146/cache-dclm_dedup # Base dir for cache
 
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
