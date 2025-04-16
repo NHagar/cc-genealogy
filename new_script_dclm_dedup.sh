@@ -157,6 +157,8 @@ cd ${CACHE_DIR} || {
   exit 1
 }
 
+git lfs install
+
 BATCH_PATH_LIMIT=1000
 
 echo "Running git lfs pull with comma-separated paths (batch size: \$BATCH_PATH_LIMIT)..."
