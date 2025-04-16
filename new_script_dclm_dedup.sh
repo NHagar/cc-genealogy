@@ -206,6 +206,17 @@ uv run python "$PROCESSING_SCRIPT" \
 EXIT_CODE=\$?
 echo "Processing script finished with exit code: \$EXIT_CODE"
 
+# cd back to repo and prune
+cd ${CACHE_DIR} || {
+  echo "Error: Failed to change directory to ${CACHE_DIR}."
+  exit 1
+}
+git lfs prune -f
+if [ \$EXIT_CODE -ne 0 ]; then
+  echo "Error: Processing script failed with exit code \$EXIT_CODE."
+  exit \$EXIT_CODE
+fi
+
 
 echo "Finished Slurm task \$SLURM_ARRAY_TASK_ID"
 EOF
