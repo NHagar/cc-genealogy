@@ -174,10 +174,10 @@ def main():
             logger.debug(f"Removing {batch_path}")
             os.remove(batch_path)
 
-    logger.info(f"Successfully processed batch {batch_num}")
+        con.close()
+        logger.debug("Database connection closed")
 
-    con.close()
-    logger.debug("Database connection closed")
+    logger.info(f"Successfully processed batch {batch_num}")
 
 
 if __name__ == "__main__":
