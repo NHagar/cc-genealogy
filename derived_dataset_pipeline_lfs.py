@@ -165,12 +165,6 @@ def main():
 
         # Clear local cache
         logger.debug(f"Cleaning up cache files in {args.cache_dir}")
-        # Remove individual files from this batch to save space
-        for fpath in fpaths:
-            file_path = f"{args.cache_dir}/repo/{fpath}"
-            if os.path.exists(file_path):
-                logger.debug(f"Removing {file_path}")
-                os.remove(file_path)
         if os.path.exists(f"{args.cache_dir}/processed/batch_{batch_num}.parquet"):
             logger.debug(
                 f"Removing {args.cache_dir}/processed/batch_{batch_num}.parquet"
