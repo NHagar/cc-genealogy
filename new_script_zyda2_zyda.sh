@@ -62,6 +62,8 @@ if [ -d "$CACHE_DIR" ]; then
   echo "Cache directory already exists at $CACHE_DIR. Skipping clone."
 else
   echo "Cache directory not found. Cloning repository to $CACHE_DIR..."
+  module load git-lfs
+  
   GIT_LFS_SKIP_SMUDGE=1 git clone "$REPO_URL" "$CACHE_DIR"
   
   if [ $? -ne 0 ]; then
