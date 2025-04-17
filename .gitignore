@@ -12,4 +12,5 @@ copy_to_onedrive.sh
 consolidated_data_files/
 deepdive.sh
 cc*/
+url_labeling/hf_cache/*
 logs/
