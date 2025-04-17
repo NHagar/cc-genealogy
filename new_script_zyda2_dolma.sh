@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # --- Configuration ---
 # You can make these command-line arguments for the wrapper script too
@@ -6,13 +7,13 @@ DATASET="zyphra/zyda-2"
 VARIANT="dolma-cc_crossdeduped-filtered"
 BATCH_SIZE=500000000000
 CONCURRENCY=1 # Max parallel array tasks Slurm should run
+CACHE_DIR_BASE=/scratch/nrh146/cache-zyda2-dolma-cc_crossdeduped-filtered # Base dir for cache
 
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
 VARIANT_NAME="$VARIANT"
 STATUS_DIR="data/status/${CLEAN_DS_NAME}_${VARIANT_NAME}"
 LOG_DIR="logs"
-CACHE_DIR_BASE=/scratch/nrh146/cache-zyda2 # Base dir for cache
 
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
@@ -47,7 +48,33 @@ if [ $setup_exit_code -ne 0 ]; then
   exit 1
 fi
 
-# --- Step 2: Extract Batch Count ---
+
+# --- Step 2: Clone repo to cache dir (if needed) ---
+# Check if the cache directory already exists
+# Set the repo URL 
+REPO_URL="https://huggingface.co/datasets/${DATASET}"
+
+# Set the full cache directory path
+CACHE_DIR="${CACHE_DIR_BASE}/repo"
+
+# Check if the cache directory already exists
+if [ -d "$CACHE_DIR" ]; then
+  echo "Cache directory already exists at $CACHE_DIR. Skipping clone."
+else
+  echo "Cache directory not found. Cloning repository to $CACHE_DIR..."
+  GIT_LFS_SKIP_SMUDGE=1 git clone "$REPO_URL" "$CACHE_DIR"
+  
+  if [ $? -ne 0 ]; then
+    echo "Error: Failed to clone repository. Aborting."
+    exit 1
+  fi
+  
+  echo "Repository successfully cloned to cache directory."
+
+fi
+
+
+# --- Step 3: Extract Batch Count ---
 # Extract the last line of the output, which should be the number
 num_batches=$(echo "$setup_output" | tail -n 1)
 
@@ -71,7 +98,7 @@ echo "Submitting Slurm array job (1-$num_batches with max ${CONCURRENCY} concurr
 
 # Define the script/command that your array tasks will run
 # Assuming your main processing script is pipeline.py and accepts necessary args
-PROCESSING_SCRIPT="derived_dataset_pipeline_aria.py" # Your main processing python script
+PROCESSING_SCRIPT="derived_dataset_pipeline_lfs.py" # Your main processing python script
 
 sbatch_output=$(sbatch <<EOF
 #!/bin/bash
@@ -93,67 +120,103 @@ echo "Starting Slurm task \$SLURM_ARRAY_TASK_ID for job \$SLURM_ARRAY_JOB_ID"
 echo "Node: \$(hostname)"
 echo "Requesting 1 task with \$SLURM_CPUS_PER_TASK CPUs."
 
-# Create a unique cache directory for this task
-TASK_CACHE_DIR="${CACHE_DIR_BASE}/task_\$SLURM_ARRAY_TASK_ID"
-mkdir -p "\$TASK_CACHE_DIR"
-if [ \$? -ne 0 ]; then
-  echo "Error: Failed to create task cache directory: \$TASK_CACHE_DIR"
-  exit 1
-fi
-echo "Using cache directory: \$TASK_CACHE_DIR"
-
 
 module purge all
+module load git-lfs
 
-# --- Initialize Conda directly using the script path from the error message ---
-echo "Sourcing Conda initialization script..."
-source /software/anaconda3/2018.12/etc/profile.d/conda.sh
-if [ \$? -ne 0 ]; then
-  echo "Error: Failed to source conda.sh"
+batchfile="data/${CLEAN_DS_NAME}_${VARIANT}/download_urls_batch_\$SLURM_ARRAY_TASK_ID.txt"
+
+if [ ! -f "\$batchfile" ]; then
+  echo "Error: Batch file \$batchfile not found. Exiting."
   exit 1
 fi
-# ---------------------------------------------------------------------------
+echo "Batch file found: \$batchfile"
 
-echo "Activating Conda environment 'aria2-env'..."
-conda activate aria2-env
-if [ \$? -ne 0 ]; then
-  echo "Error: Failed to activate conda environment 'aria2-env'. Check if it exists and was created with this Conda installation."
+# Create a temporary file to store paths for xargs
+temp_include_file=$(mktemp)
+
+# Process the batch file and store paths in the temporary file
+while IFS= read -r path; do
+  # Skip empty lines or lines that look like comments
+  [[ -z "\$path" || "\$path" =~ ^# ]] && continue
+  # Write the path to the temp file
+  echo "\$path" >> "\$temp_include_file"
+done < "\$batchfile"
+
+# Check if we have any paths
+if [ ! -s "\$temp_include_file" ]; then
+  echo "No valid file paths found in \$batchfile"
+  rm "\$temp_include_file"
   exit 1
 fi
 
-echo "DEBUG: Value of SLURM_CPUS_PER_TASK before uv run: [\$SLURM_CPUS_PER_TASK]"
-if [ -z "\$SLURM_CPUS_PER_TASK" ] || [[ "\$SLURM_CPUS_PER_TASK" =~ ^[[:space:]]*$ ]]; then
-    echo "Error: SLURM_CPUS_PER_TASK is empty or whitespace. Exiting."
+# --- Step 4: Run git lfs pull ---
+cd ${CACHE_DIR} || {
+  echo "Error: Failed to change directory to ${CACHE_DIR}."
+  rm "\$temp_include_file" # Clean up temp file
+  exit 1
+}
+
+git lfs install
+
+BATCH_PATH_LIMIT=1000
+
+echo "Running git lfs pull with comma-separated paths (batch size: \$BATCH_PATH_LIMIT)..."
+
+# Process the files in batches using xargs
+cat "\$temp_include_file" | xargs -n \$BATCH_PATH_LIMIT sh -c '
+    # Count files properly using number of arguments
+    file_count=\$#
+    echo "Pulling batch of \${file_count} files..."
+    
+    # Create a properly escaped comma-separated list
+    paths=""
+    for file in "\$@"; do
+        if [ -z "\$paths" ]; then
+            paths="\$file"
+        else
+            paths="\$paths,\$file"
+        fi
+    done
+    
+    # Execute git lfs pull with the single --include flag and comma-separated list
+    git lfs pull --include="\$paths"
+' _ || {
+    echo "Error: git lfs pull with comma-separated paths failed."
+    cd - > /dev/null
+    rm "\$temp_include_file"
     exit 1
-fi
+}
 
-echo "DEBUG: Running uv command..."
-which uv # Check if uv is found after conda activation
-which aria2c # Check if aria2c is found after conda activation
+echo "git lfs pull completed successfully."
 
-# --- Print the exact command before execution ---
-echo "DEBUG: Preparing to execute the following command:"
-# Use 'printf' for potentially better handling of weird characters than 'echo'
-printf "uv run python %s --dataset %s --variant %s --num-proc %s --cache-dir %s\n" \
-    "$PROCESSING_SCRIPT" \
-    "$DATASET" \
-    "$VARIANT" \
-    "\$SLURM_CPUS_PER_TASK" \
-    "\$TASK_CACHE_DIR"
-echo "---------------------------------------------"
+# Clean up the temporary file
+rm "\$temp_include_file"
+
+# cd back to the original directory
+cd - || exit 1
 
 
+# --- Step 5: Run Python processing script ---
 uv run python "$PROCESSING_SCRIPT" \
     --dataset "$DATASET" \
     --variant "$VARIANT" \
-    --num-proc "\$SLURM_CPUS_PER_TASK" \
-    --cache-dir "\$TASK_CACHE_DIR"
+    --cache-dir "$CACHE_DIR_BASE"
 
 EXIT_CODE=\$?
 echo "Processing script finished with exit code: \$EXIT_CODE"
 
-echo "Deactivating Conda environment (good practice)..."
-conda deactivate
+# cd back to repo and prune
+cd ${CACHE_DIR} || {
+  echo "Error: Failed to change directory to ${CACHE_DIR}."
+  exit 1
+}
+git lfs prune -f
+if [ \$EXIT_CODE -ne 0 ]; then
+  echo "Error: Processing script failed with exit code \$EXIT_CODE."
+  exit \$EXIT_CODE
+fi
+
 
 echo "Finished Slurm task \$SLURM_ARRAY_TASK_ID"
 EOF
