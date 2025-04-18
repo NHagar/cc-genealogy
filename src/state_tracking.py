@@ -72,8 +72,8 @@ dataset_rules = {
             },
             "zyda_crossdeduped-filtered": {
                 "prefix": [
-                    "data/zyda_crossdeduped-filtered/zyda_c4-en/",
-                    "data/zyda_crossdeduped-filtered/zyda_refinedweb/",
+                    "data/zyda_crossdeduped-filtered /zyda_c4-en",
+                    "data/zyda_crossdeduped-filtered /zyda_refinedweb",
                 ],
                 "suffix": ".parquet",
                 "exclude": None,
