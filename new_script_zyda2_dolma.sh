@@ -76,27 +76,33 @@ else
 fi
 
 
-# --- Step 3: Extract Batch Count ---
-# Extract the last line of the output, which should be the number
-num_batches=$(echo "$setup_output" | tail -n 1)
-
-# Validate if it's a positive integer
-if ! [[ "$num_batches" =~ ^[1-9][0-9]*$ ]]; then
-  echo "Error: Could not extract a valid positive integer batch count from setup script."
-  echo "Extracted value: '$num_batches'"
-  # Check if it was 0, maybe that's valid?
-  if [[ "$num_batches" == "0" ]]; then
-       echo "Setup reported 0 batches. Nothing to submit."
-       exit 0 # Successfully did nothing
+# --- Step 3: Identify Unprocessed Batches ---
+# Extract total batches from setup_output (last line)
+total_batches=$(echo "$setup_output" | tail -n 1)
+# Directory containing batch files
+batch_dir="data/${CLEAN_DS_NAME}_${VARIANT}"
+# Collect indices of unprocessed batches
+nums=()
+for f in "$batch_dir"/download_urls_batch_*.txt; do
+  [[ -f "$f" ]] || continue
+  if [[ $(basename "$f") =~ download_urls_batch_([0-9]+)\.txt ]]; then
+    nums+=("${BASH_REMATCH[1]}")
   fi
-  exit 1 # Exit on invalid non-zero value
+done
+# Exit if nothing to process
+if [ ${#nums[@]} -eq 0 ]; then
+  echo "No unprocessed batch files found. Nothing to submit."
+  exit 0
 fi
+# Create comma-separated list for sbatch array
+array_spec=$(printf "%s," "${nums[@]}")
+array_spec=${array_spec%,}
 
 echo
-echo "Setup successful. Found $num_batches batches."
+echo "Setup successful. Found ${#nums[@]} unprocessed batches: ${array_spec}"
 
 # --- Step 3: Submit Slurm Array Job ---
-echo "Submitting Slurm array job (1-$num_batches with max ${CONCURRENCY} concurrent tasks)..."
+echo "Submitting Slurm array job (${array_spec} with max ${CONCURRENCY} concurrent tasks)..."
 
 # Define the script/command that your array tasks will run
 # Assuming your main processing script is pipeline.py and accepts necessary args
@@ -107,7 +113,7 @@ sbatch_output=$(sbatch <<EOF
 #SBATCH --account=p32491  ## YOUR ACCOUNT pXXXX or bXXXX
 #SBATCH --partition=normal  ### PARTITION (buyin, short, normal, etc)
 #SBATCH --job-name="proc_${CLEAN_DS_NAME}_${VARIANT_NAME}"
-#SBATCH --array=1-${num_batches}%${CONCURRENCY}
+#SBATCH --array=${array_spec}%${CONCURRENCY}
 #SBATCH --output="${LOG_DIR}/slurm-%A_%a.out"  # %A=jobid, %a=taskid
 #SBATCH --error="${LOG_DIR}/slurm-%A_%a.err"
 #SBATCH --nodes=1                # Ensure tasks run on single nodes unless needed otherwise
@@ -128,9 +134,10 @@ module load git-lfs
 
 batchfile="data/${CLEAN_DS_NAME}_${VARIANT}/download_urls_batch_\$SLURM_ARRAY_TASK_ID.txt"
 
+# Replace batch file check to treat missing files as already processed
 if [ ! -f "\$batchfile" ]; then
-  echo "Error: Batch file \$batchfile not found. Exiting."
-  exit 1
+  echo "Batch file \$batchfile not found; already processed. Exiting."
+  exit 0
 fi
 echo "Batch file found: \$batchfile"
 
