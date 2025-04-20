@@ -149,7 +149,7 @@ while IFS= read -r path; do
   # Skip empty lines or lines that look like comments
   [[ -z "\$path" || "\$path" =~ ^# ]] && continue
   # Write the path to the temp file
-  echo "\$path" >> "\$temp_include_file"
+  printf "%s\0" "\$path" >> "\$temp_include_file"
 done < "\$batchfile"
 
 # Check if we have any paths
@@ -173,7 +173,7 @@ BATCH_PATH_LIMIT=1000
 echo "Running git lfs pull with comma-separated paths (batch size: \$BATCH_PATH_LIMIT)..."
 
 # Process the files in batches using xargs
-cat "\$temp_include_file" | xargs -n \$BATCH_PATH_LIMIT sh -c '
+cat "\$temp_include_file" | xargs -0 -n \$BATCH_PATH_LIMIT sh -c '
     # Count files properly using number of arguments
     file_count=\$#
     echo "Pulling batch of \${file_count} files..."
