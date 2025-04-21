@@ -101,6 +101,16 @@ dataset_rules = {
             }
         }
     },
+    "huggingfacefw/fineweb": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
