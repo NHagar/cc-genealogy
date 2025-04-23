@@ -12,7 +12,7 @@ dataset_rules = {
             "multilingual": {
                 "prefix": ["multilingual/"],
                 "suffix": ".json.gz",
-                "exclude": "-validation",
+                "exclude": ["-validation"],
                 "url_extraction": "SELECT url",
             }
         }
@@ -111,6 +111,26 @@ dataset_rules = {
             }
         }
     },
+    "huggingfacefw/fineweb-edu": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "huggingfacefw/fineweb-2": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": ["_removed/", "test/"],
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
@@ -201,7 +221,11 @@ def write_batch_files(
         ]
     repo_files = [i for i in repo_files if i.path.endswith(variant_rules["suffix"])]
     if variant_rules["exclude"] is not None:
-        repo_files = [i for i in repo_files if variant_rules["exclude"] not in i.path]
+        repo_files = [
+            i
+            for i in repo_files
+            if not any(exclude in i.path for exclude in variant_rules["exclude"])
+        ]
     logger.info(f"Found {len(repo_files)} files matching the criteria")
     logger.info("Assigning files to batches")
     batch_assignments = assign_batches(
