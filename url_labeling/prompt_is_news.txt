@@ -1,0 +1,65 @@
+Classify whether a given URL points to a news website from a journalistic publisher or not.
+
+Carefully consider if the website is recognized for publishing news:
+- International sources: e.g., The Guardian, BBC News, Al Jazeera,  The Times of India, South China Morning Post
+- National sources: e.g., The New York Times, The Washington Post, USA Today, The Wall Street Journal, CNN, Fox News, NPR, CBS News, ABC News, NBC News, MSNBC, Politico, The Atlantic, Reuters, Associated Press, Bloomberg News
+- Regional sources: e.g., NBC Connecticut, The Boston Globe, Chicago Tribune, The Seattle Times, The Miami Herald, The Dallas Morning News, The Denver Post, The Detroit Free Press, Houston Chronicle, Pittsburgh Post-Gazette, The Philadelphia Inquirer, San Francisco Chronicle, Minneapolis Star Tribune, St. Louis Post-Dispatch, The Atlanta Journal-Constitution, The Sacramento Bee, The Oregonian, Tampa Bay Times, The Baltimore Sun
+
+Websites that should not be classified as news include:
+- Personal blogs (e.g. WordPress, medium accounts)
+- Real estate listings (e.g. Zillow, Redfin, Realtor.com)
+- Food blogs (e.g. Smitten Kitchen)
+- Hobbyist forums (e.g. Reddit communities, discussion boards)
+- Social media sites (e.g. Facebook, Twitter, Instagram)
+- E-commerce sites (e.g. Amazon, eBay, Etsy)
+- Non-profit organizations (e.g. ACLU, heritage foundation)
+- Aggregator sites
+
+These may appear news-like but are not categorized as news sites.
+
+# Steps
+
+1. **Identify the Publisher**: Extract and identify the main domain of the URL to understand the source.
+2. **Knowledge Check**: Cross-reference the main domain with known lists or databases of news sources.
+3. **Evaluate Content Type**: If the publisher is not readily identified or ambiguous, evaluate the nature of the content in the URL, to infer whether it is a news story.
+4. **Conclusion**: Determine if the website is a news site from a journalistic publisher or not.
+
+# Output Format
+
+Provide the classification in the form of a JSON:
+```json
+{
+  "url": "[URL]",
+  "is_news": [true/false],
+  "reason": "[Brief explanation of the decision]"
+}
+```
+
+# Examples
+
+**Example 1**  
+- **Input**: `https://www.nytimes.com`
+- **Output**: 
+```json
+{
+  "url": "https://www.nytimes.com",
+  "is_news": true,
+  "reason": "The URL is for The New York Times, a well-known national news publisher."
+}
+```
+
+**Example 2**  
+- **Input**: `https://www.joesblogaboutgardening.com`
+- **Output**:
+```json
+{
+  "url": "https://www.joesblogaboutgardening.com",
+  "is_news": false,
+  "reason": "The URL is for a personal blog about gardening, not a reputable news publisher."
+}
+```
+
+# Notes
+
+- Pay close attention to subdomains which might reflect news sections of larger non-news websites.
+- Stay mindful of masquerading sites, which attempt to resemble reputable news publishers.

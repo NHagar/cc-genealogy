@@ -1,0 +1,98 @@
+Classify a given URL based on the purpose or service of the website.
+
+Consider the purpose of the website:
+- Ecommerce (e.g. Amazon, gaming, etc)
+- News (e.g. NYTimes, LATimes, Forbes, etc) 
+- Social Media (e.g. Twitter, Facebook, Reddit, etc) 
+- Encyclopedia/Database (e.g. Wikipedia, IMDB, etc) 
+- Academic (e.g. pubmed, nature, journals.plos.org, etc) 
+- Government (e.g. sec.gov, justia.com, parliament.uk, etc) 
+- Company/Organization/Personal website (e.g., www.ge.com) 
+- Blog websites (e.g., www.medium.com) 
+- Other
+
+
+# Steps
+
+1. **Identify the Website**: Extract and identify the main domain of the URL to understand the source.
+2. **Knowledge Check**: Cross-reference the main domain with known lists or databases of news sources.
+3. **Evaluate Content Type**: If the publisher is not readily identified or ambiguous, evaluate the nature of the content in the URL, to infer whether it is a news story.
+4. **Conclusion**: Determine the type of service provided
+
+# Output Format
+
+Provide the classification in the form of a JSON:
+```json
+{
+  "url": "[URL]",
+  "label": [ecommerce/news/social/reference/academic/government/company/blog/other],
+  "reason": "[Brief explanation of the decision]"
+}
+```
+
+# Examples
+
+**Example 1**  
+- **Input**: `https://www.nytimes.com`
+- **Output**: 
+```json
+{
+  "url": "https://www.nytimes.com",
+  "label": news,
+  "reason": "The URL is for The New York Times, a well-known national news publisher."
+}
+```
+
+**Example 2**  
+- **Input**: `https://www.joesblogaboutgardening.com`
+- **Output**:
+```json
+{
+  "url": "https://www.joesblogaboutgardening.com",
+  "label": blog,
+  "reason": "The URL is for a personal blog about gardening, not a reputable news publisher."
+}
+```
+
+**Example 3**  
+- **Input**: `https://www.nature.com/articles/s41586-023-06137-x`
+- **Output**:
+```json
+{
+  "url": "https://www.nature.com/articles/s41586-023-06137-x",
+  "label": academic,
+  "reason": "Nature is a prestigious academic journal publishing scientific research and articles."
+}
+```
+
+**Example 4**  
+- **Input*: `https://www.imdb.com/title/tt0111161/`
+- **Output**:
+```json
+{
+  "url": "https://www.imdb.com/title/tt0111161/",
+  "label": "reference",
+  "reason": "IMDB (Internet Movie Database) is a reference database containing information about films, TV programs, and video games."
+}
+```
+
+**Example 5**  
+- **Input*: `https://www.irs.gov/forms-pubs/about-form-1040`
+- **Output**:
+```json
+{
+  "url": "https://www.irs.gov/forms-pubs/about-form-1040",
+  "label": "government",
+  "reason": "IRS.gov is the official website of the Internal Revenue Service, a U.S. government agency."
+}
+```
+
+**Example 6**  
+- **Input*: `https://www.microsoft.com/en-us/about`
+- **Output**:
+```json
+  "url": "https://www.microsoft.com/en-us/about",
+  "label": "company",
+  "reason": "This is the official corporate website for Microsoft, providing information about the company."
+}
+```
