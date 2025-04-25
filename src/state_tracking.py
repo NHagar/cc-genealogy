@@ -131,6 +131,22 @@ dataset_rules = {
             }
         }
     },
+    "allenai/madlad-400": {
+        "variants": {
+            "clean": {
+                "prefix": ["data-v1p5/"],
+                "suffix": ".jsonl.gz",
+                "exclude": ["noisy_"],
+                "url_extraction": "SELECT url",
+            },
+            "noisy": {
+                "prefix": ["data-v1p5/"],
+                "suffix": ".jsonl.gz",
+                "exclude": ["clean_"],
+                "url_extraction": "SELECT url",
+            },
+        }
+    },
 }
 
 
