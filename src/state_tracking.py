@@ -147,6 +147,16 @@ dataset_rules = {
             },
         }
     },
+    "llm360/txt360": {
+        "variants": {
+            "default": {
+                "prefix": ["data/common-crawl/"],
+                "suffix": ".jsonl.gz",
+                "exclude": None,
+                "url_extraction": "SELECT meta.url",
+            }
+        }
+    },
 }
 
 
