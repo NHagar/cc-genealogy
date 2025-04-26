@@ -157,6 +157,16 @@ dataset_rules = {
             }
         }
     },
+    "oscar-corpus/moscar": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            }
+        }
+    },
 }
 
 
