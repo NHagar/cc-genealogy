@@ -177,6 +177,16 @@ dataset_rules = {
             }
         }
     },
+    "infi-mm/infimm-webmath-40b": {
+        "variants": {
+            "default": {
+                "prefix": "part-",
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT URL",
+            }
+        }
+    },
 }
 
 
