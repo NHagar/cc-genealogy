@@ -167,6 +167,16 @@ dataset_rules = {
             }
         }
     },
+    "clusterlabai/101_billion_arabic_words_dataset": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
