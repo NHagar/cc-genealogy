@@ -187,6 +187,16 @@ dataset_rules = {
             }
         }
     },
+    "bertin-project/mc4-es-sampled": {
+        "variants": {
+            "default": {
+                "prefix": "mc4-es-train-",
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
