@@ -197,6 +197,16 @@ dataset_rules = {
             }
         }
     },
+    "erhwenkuo/c4-chinese-zhtw": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
