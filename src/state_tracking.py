@@ -207,6 +207,16 @@ dataset_rules = {
             }
         }
     },
+    "gsarti/clean_mc4_it": {
+        "variants": {
+            "default": {
+                "prefix": ["clean-mc4-it/"],
+                "suffix": ".json.gz",
+                "exclude": ["c4-it-validation"],
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
