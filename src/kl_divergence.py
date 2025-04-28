@@ -136,11 +136,45 @@ def calculate_kl_divergence(path1: Path, path2: Path) -> float:
     Returns:
         float: The Kullback-Leibler divergence between the two datasets.
     """
-    # Placeholder for actual KL divergence calculation
-    return 0.0
+    query = f"""
+    WITH
+  P AS (
+    SELECT
+      url_host_name,
+      url_count
+      / SUM(url_count) OVER ()            AS p_prob
+    FROM '{path1}'
+  ),
+  Q AS (
+    SELECT
+      url_host_name,
+      url_count
+      / SUM(url_count) OVER ()            AS q_prob
+    FROM '{path2}'
+  )
+SELECT
+  SUM(
+    p_prob
+    * LN(
+        p_prob
+        / COALESCE(q_prob, 1e-12)       -- smoothing to avoid div/0
+      )
+  ) AS kl_divergence
+FROM P
+LEFT JOIN Q USING (url_host_name);
+"""
+    print(f"Running KL divergence query:\n{query}\n")
+    con = duckdb.connect()
+    result = con.execute(query).fetchone()
+    con.close()
+    kl_divergence = result[0] if result else 0.0
+    print(f"KL divergence: {kl_divergence}")
+    return kl_divergence
 
 
-def compare_datasets(dataset1: Union[str, List], dataset2: Union[str, List]) -> float:
+def calculate_dataset_divergence(
+    dataset1: Union[str, List], dataset2: Union[str, List]
+) -> float:
     """
     Compare two datasets and calculate the Kullback-Leibler divergence.
 
@@ -191,12 +225,14 @@ def compare_datasets(dataset1: Union[str, List], dataset2: Union[str, List]) -> 
     run_query(query1, output_path1)
     run_query(query2, output_path2)
 
-    # Placeholder for actual dataset comparison logic
-    return 0.0
+    # Calculate the KL divergence
+    kl_divergence = calculate_kl_divergence(output_path1, output_path2)
+    print(f"KL divergence between {dataset1} and {dataset2}: {kl_divergence}")
+    return kl_divergence
 
 
 if __name__ == "__main__":
-    compare_datasets(
+    calculate_dataset_divergence(
         ["nhagar/CC-MAIN-2021-17_urls", "nhagar/CC-MAIN-2016-40_urls"],
         ["nhagar/clean_mc4_it_urls"],
     )
