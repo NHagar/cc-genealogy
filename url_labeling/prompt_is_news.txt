@@ -30,7 +30,7 @@ Provide the classification in the form of a JSON:
 ```json
 {
   "url": "[URL]",
-  "is_news": [true/false],
+  "is_news": [1/0],
   "reason": "[Brief explanation of the decision]"
 }
 ```
@@ -43,7 +43,7 @@ Provide the classification in the form of a JSON:
 ```json
 {
   "url": "https://www.nytimes.com",
-  "is_news": true,
+  "is_news": 1,
   "reason": "The URL is for The New York Times, a well-known national news publisher."
 }
 ```
@@ -54,7 +54,7 @@ Provide the classification in the form of a JSON:
 ```json
 {
   "url": "https://www.joesblogaboutgardening.com",
-  "is_news": false,
+  "is_news": 0,
   "reason": "The URL is for a personal blog about gardening, not a reputable news publisher."
 }
 ```
