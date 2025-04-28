@@ -2,6 +2,8 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Union
 
+import duckdb
+
 
 def pull_dataset(dataset_name: str) -> Path:
     """
@@ -41,21 +43,6 @@ def pull_dataset(dataset_name: str) -> Path:
     except subprocess.CalledProcessError as e:
         print(f"Failed to clone repository: {e}")
         raise
-
-
-def calculate_kl_divergence(path1: Path, path2: Path) -> float:
-    """
-    Calculate the Kullback-Leibler divergence between two datasets.
-
-    Args:
-        path1 (Path): Path to the first dataset.
-        path2 (Path): Path to the second dataset.
-
-    Returns:
-        float: The Kullback-Leibler divergence between the two datasets.
-    """
-    # Placeholder for actual KL divergence calculation
-    return 0.0
 
 
 def build_query(dataset_metadata: List[Dict]) -> str:
@@ -101,16 +88,56 @@ def build_query(dataset_metadata: List[Dict]) -> str:
 
     # final roll-up across all subsets
     final_query = f"""{cte_section}
-SELECT
-  url_host_name,
-  SUM(url_count) AS url_count
-FROM (
-  {union_all}
-) AS all_subsets
-GROUP BY url_host_name
-ORDER BY url_count DESC;"""
+    SELECT
+    url_host_name,
+    SUM(url_count) AS url_count
+    FROM (
+    {union_all}
+    ) AS all_subsets
+    GROUP BY url_host_name
+    ORDER BY url_count DESC"""
 
     return final_query
+
+
+def run_query(query: str, output_path: Path, force: bool = False):
+    """
+    Run a SQL query and save the results to a Parquet file.
+
+    Args:
+        query (str): The SQL query to run.
+        output_path (Path): Path to save the output Parquet file.
+        force (bool): If True, overwrite existing files.
+
+    Returns:
+        None
+    """
+    print(f"Running query:\n{query}\n")
+    print(f"Saving results to {output_path}")
+
+    if output_path.exists() and not force:
+        print(f"Output file {output_path} already exists. Use force=True to overwrite.")
+        return
+
+    con = duckdb.connect()
+    con.execute(f"COPY (SELECT * FROM ({query})) TO '{output_path}' (FORMAT PARQUET)")
+    con.close()
+    print(f"Query results saved to {output_path}")
+
+
+def calculate_kl_divergence(path1: Path, path2: Path) -> float:
+    """
+    Calculate the Kullback-Leibler divergence between two datasets.
+
+    Args:
+        path1 (Path): Path to the first dataset.
+        path2 (Path): Path to the second dataset.
+
+    Returns:
+        float: The Kullback-Leibler divergence between the two datasets.
+    """
+    # Placeholder for actual KL divergence calculation
+    return 0.0
 
 
 def compare_datasets(dataset1: Union[str, List], dataset2: Union[str, List]) -> float:
@@ -158,9 +185,18 @@ def compare_datasets(dataset1: Union[str, List], dataset2: Union[str, List]) -> 
     print(f"Query for dataset 1:\n{query1}\n")
     print(f"Query for dataset 2:\n{query2}\n")
 
+    # Run the queries and save the results
+    output_path1 = Path("data") / "dataset1_results.parquet"
+    output_path2 = Path("data") / "dataset2_results.parquet"
+    run_query(query1, output_path1)
+    run_query(query2, output_path2)
+
     # Placeholder for actual dataset comparison logic
     return 0.0
 
 
 if __name__ == "__main__":
-    compare_datasets(["nhagar/CC-MAIN-2021-17_urls"], ["nhagar/clean_mc4_it_urls"])
+    compare_datasets(
+        ["nhagar/CC-MAIN-2021-17_urls", "nhagar/CC-MAIN-2016-40_urls"],
+        ["nhagar/clean_mc4_it_urls"],
+    )
