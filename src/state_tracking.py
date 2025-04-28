@@ -217,6 +217,16 @@ dataset_rules = {
             }
         }
     },
+    "chrisneverdie/onlysports_dataset": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
