@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Union
@@ -168,12 +169,11 @@ LEFT JOIN Q USING (url_host_name);
     result = con.execute(query).fetchone()
     con.close()
     kl_divergence = result[0] if result else 0.0
-    print(f"KL divergence: {kl_divergence}")
     return kl_divergence
 
 
 def calculate_dataset_divergence(
-    dataset1: Union[str, List], dataset2: Union[str, List]
+    dataset1: Union[str, List], dataset2: Union[str, List], cleanup: bool = True
 ) -> float:
     """
     Compare two datasets and calculate the Kullback-Leibler divergence.
@@ -181,6 +181,8 @@ def calculate_dataset_divergence(
     Args:
         dataset1 (Union[str, List]): The first dataset or a list of datasets.
         dataset2 (Union[str, List]): The second dataset or a list of datasets.
+        cleanup (bool): If True, clean up local files after processing.
+            Defaults to True.
 
     Returns:
         float: The Kullback-Leibler divergence between the two datasets.
@@ -228,6 +230,18 @@ def calculate_dataset_divergence(
     # Calculate the KL divergence
     kl_divergence = calculate_kl_divergence(output_path1, output_path2)
     print(f"KL divergence between {dataset1} and {dataset2}: {kl_divergence}")
+
+    # Clean up local files if requested
+    if cleanup:
+        for dataset in d1_metadata + d2_metadata:
+            dataset_path = Path(dataset["dataset_path"])
+            if dataset_path.exists():
+                print(f"Cleaning up {dataset_path}")
+                shutil.rmtree(dataset_path)
+        output_path1.unlink()
+        output_path2.unlink()
+        print(f"Cleaned up output files: {output_path1}, {output_path2}")
+
     return kl_divergence
 
 
