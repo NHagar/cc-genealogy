@@ -238,8 +238,8 @@ def calculate_dataset_divergence(
             if dataset_path.exists():
                 print(f"Cleaning up {dataset_path}")
                 shutil.rmtree(dataset_path)
-        output_path1.unlink()
-        output_path2.unlink()
+        output_path1.unlink(missing_ok=True)
+        output_path2.unlink(missing_ok=True)
         print(f"Cleaned up output files: {output_path1}, {output_path2}")
 
     return kl_divergence
