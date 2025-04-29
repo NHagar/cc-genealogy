@@ -26,8 +26,6 @@ echo "  Variant: $VARIANT"
 echo "======================================================"
 
 # --- Step 3: Identify Unprocessed Batches ---
-# Extract total batches from setup_output (last line)
-total_batches=$(echo "$setup_output" | tail -n 1)
 # Directory containing batch files
 batch_dir="data/${CLEAN_DS_NAME}_${VARIANT}"
 # Collect indices of unprocessed batches
