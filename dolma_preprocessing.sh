@@ -14,7 +14,7 @@ for file in cache-dolma/urls/*.txt; do
     mkdir -p "/projects/p32491/cc-genealogy/data/allenai_dolma_${base_name}"
     
     # Filter lines matching patterns and chunk into batches of 400
-    grep -E '/c4|/cc-|/falcon-refinedweb' "$file" | \
+    grep -E '/c4|/cc_|/falcon-refinedweb' "$file" | \
     awk '{
         batch = int((NR-1) / 400) + 1;
         output_file = "/projects/p32491/cc-genealogy/data/allenai_dolma_" line_base_name "/download_urls_batch_" batch ".txt";
