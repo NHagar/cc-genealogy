@@ -98,7 +98,11 @@ def main():
 
         with open(batch_path, "r") as f:
             fpaths = f.readlines()
-        fpaths = [f.strip() for f in fpaths]
+
+        if "dolma" in args.dataset:
+            fpaths = [f.strip().split(".org/")[-1] for f in fpaths]
+        else:
+            fpaths = [f.strip() for f in fpaths]
 
         # Get URL extraction configuration for this dataset
         suffix = dataset_rules[args.dataset]["variants"][args.variant]["suffix"]

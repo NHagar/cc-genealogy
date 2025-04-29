@@ -227,6 +227,34 @@ dataset_rules = {
             }
         }
     },
+    "allenai/dolma": {
+        "variants": {
+            "v1": {
+                "prefix": None,
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            },
+            "v1_5": {
+                "prefix": None,
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            },
+            "v1_6": {
+                "prefix": None,
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            },
+            "v1_7": {
+                "prefix": None,
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            },
+        }
+    },
 }
 
 

@@ -4,10 +4,9 @@ set -euo pipefail
 # --- Configuration ---
 # You can make these command-line arguments for the wrapper script too
 DATASET="allenai/dolma"
-VARIANT="default"
-BATCH_SIZE=500000000000
+VARIANT="v1"
 CONCURRENCY=1 # Max parallel array tasks Slurm should run
-CACHE_DIR_BASE=/scratch/nrh146/cache-dolma-1 # Base dir for cache
+CACHE_DIR_BASE=/scratch/nrh146/cache-dolma-v1 # Base dir for cache
 
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
@@ -25,56 +24,6 @@ echo "Starting Pipeline Submission for:"
 echo "  Dataset: $DATASET"
 echo "  Variant: $VARIANT"
 echo "======================================================"
-
-# --- Step 1: Run Setup Script ---
-echo
-echo "Running setup script..."
-setup_output=$(uv run setup_pipeline.py \
-    --dataset "$DATASET" \
-    --variant "$VARIANT" \
-    --batch-size $BATCH_SIZE)
-
-# Capture exit code of setup script
-setup_exit_code=$?
-
-# Print the full output of the setup script for debugging/logging
-echo "--- Setup Script Output ---"
-echo "$setup_output"
-echo "-------------------------"
-
-# Check if the setup script exited successfully
-if [ $setup_exit_code -ne 0 ]; then
-  echo "Error: Setup script failed with exit code $setup_exit_code. Aborting."
-  exit 1
-fi
-
-
-# --- Step 2: Clone repo to cache dir (if needed) ---
-# Check if the cache directory already exists
-# Set the repo URL 
-REPO_URL="https://huggingface.co/datasets/${DATASET}"
-
-# Set the full cache directory path
-CACHE_DIR="${CACHE_DIR_BASE}/repo"
-
-# Check if the cache directory already exists
-if [ -d "$CACHE_DIR" ]; then
-  echo "Cache directory already exists at $CACHE_DIR. Skipping clone."
-else
-  echo "Cache directory not found. Cloning repository to $CACHE_DIR..."
-  module load git-lfs
-
-  GIT_LFS_SKIP_SMUDGE=1 git clone "$REPO_URL" "$CACHE_DIR"
-  
-  if [ $? -ne 0 ]; then
-    echo "Error: Failed to clone repository. Aborting."
-    exit 1
-  fi
-  
-  echo "Repository successfully cloned to cache directory."
-
-fi
-
 
 # --- Step 3: Identify Unprocessed Batches ---
 # Extract total batches from setup_output (last line)
@@ -130,11 +79,9 @@ echo "Requesting 1 task with \$SLURM_CPUS_PER_TASK CPUs."
 
 
 module purge all
-module load git-lfs
 
 batchfile="data/${CLEAN_DS_NAME}_${VARIANT}/download_urls_batch_\$SLURM_ARRAY_TASK_ID.txt"
 
-# Replace batch file check to treat missing files as already processed
 if [ ! -f "\$batchfile" ]; then
   echo "Batch file \$batchfile not found; already processed. Exiting."
   exit 0
@@ -159,45 +106,28 @@ if [ ! -s "\$temp_include_file" ]; then
   exit 1
 fi
 
-# --- Step 4: Run git lfs pull ---
-cd ${CACHE_DIR} || {
-  echo "Error: Failed to change directory to ${CACHE_DIR}."
+# --- Step 4: Download files using wget in parallel ---
+echo "Downloading files using wget with \$SLURM_CPUS_PER_TASK parallel processes..."
+
+# Create directory for downloads
+DOWNLOAD_DIR="$CACHE_DIR_BASE/repo"
+mkdir -p "\$DOWNLOAD_DIR"
+
+# Change to the download directory
+cd "\$DOWNLOAD_DIR" || {
+  echo "Error: Failed to change directory to \$DOWNLOAD_DIR."
   rm "\$temp_include_file" # Clean up temp file
   exit 1
 }
 
-git lfs install
-
-BATCH_PATH_LIMIT=1000
-
-echo "Running git lfs pull with comma-separated paths (batch size: \$BATCH_PATH_LIMIT)..."
-
-# Process the files in batches using xargs
-cat "\$temp_include_file" | xargs -0 -n \$BATCH_PATH_LIMIT sh -c '
-    # Count files properly using number of arguments
-    file_count=\$#
-    echo "Pulling batch of \${file_count} files..."
-    
-    # Create a properly escaped comma-separated list
-    paths=""
-    for file in "\$@"; do
-        if [ -z "\$paths" ]; then
-            paths="\$file"
-        else
-            paths="\$paths,\$file"
-        fi
-    done
-    
-    # Execute git lfs pull with the single --include flag and comma-separated list
-    git lfs pull --include="\$paths"
-' _ || {
-    echo "Error: git lfs pull with comma-separated paths failed."
-    cd - > /dev/null
+# Use xargs to run wget in parallel with number of parallel processes matching CPUs
+cat "\$temp_include_file" | xargs -0 -P "\$SLURM_CPUS_PER_TASK" -I{} wget --quiet {} || {
+    echo "Error: Parallel wget download failed."
     rm "\$temp_include_file"
     exit 1
 }
 
-echo "git lfs pull completed successfully."
+echo "Download completed successfully with \$SLURM_CPUS_PER_TASK parallel processes."
 
 # Clean up the temporary file
 rm "\$temp_include_file"
@@ -214,17 +144,6 @@ uv run python "$PROCESSING_SCRIPT" \
 
 EXIT_CODE=\$?
 echo "Processing script finished with exit code: \$EXIT_CODE"
-
-# cd back to repo and prune
-cd ${CACHE_DIR} || {
-  echo "Error: Failed to change directory to ${CACHE_DIR}."
-  exit 1
-}
-git lfs prune -f
-if [ \$EXIT_CODE -ne 0 ]; then
-  echo "Error: Processing script failed with exit code \$EXIT_CODE."
-  exit \$EXIT_CODE
-fi
 
 
 echo "Finished Slurm task \$SLURM_ARRAY_TASK_ID"
