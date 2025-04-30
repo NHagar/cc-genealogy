@@ -13,10 +13,10 @@ for file in cache-dolma/urls/*.txt; do
     # Create output directory
     mkdir -p "/projects/p32491/cc-genealogy/data/allenai_dolma_${base_name}"
     
-    # Filter lines matching patterns and chunk into batches of 400
+    # Filter lines matching patterns and chunk into batches of 100
     grep -E '/c4|/cc_|/falcon-refinedweb' "$file" | \
     awk '{
-        batch = int((NR-1) / 400) + 1;
+        batch = int((NR-1) / 100) + 1;
         output_file = "/projects/p32491/cc-genealogy/data/allenai_dolma_" line_base_name "/download_urls_batch_" batch ".txt";
         print $0 > output_file;
     }' line_base_name="$base_name"
