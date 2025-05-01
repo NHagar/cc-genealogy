@@ -100,7 +100,7 @@ def main():
             fpaths = f.readlines()
 
         if "dolma" in args.dataset:
-            fpaths = [f.strip().split(".org/")[-1] for f in fpaths]
+            fpaths = [f.strip().split("/")[-1] for f in fpaths]
         else:
             fpaths = [f.strip() for f in fpaths]
 
