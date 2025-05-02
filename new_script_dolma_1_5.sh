@@ -4,9 +4,9 @@ set -euo pipefail
 # --- Configuration ---
 # You can make these command-line arguments for the wrapper script too
 DATASET="allenai/dolma"
-VARIANT="v1"
+VARIANT="v1_5"
 CONCURRENCY=1 # Max parallel array tasks Slurm should run
-CACHE_DIR_BASE=/scratch/nrh146/cache-dolma-v1 # Base dir for cache
+CACHE_DIR_BASE=/scratch/nrh146/cache-dolma-v1_5 # Base dir for cache
 
 # Derived names
 CLEAN_DS_NAME=$(echo "$DATASET" | tr '/' '_' | tr '-' '_' | tr '.' '_')
@@ -90,7 +90,7 @@ echo "Batch file found: \$batchfile"
 temp_include_file=$(mktemp)
 
 # Process the batch file and store paths in the temporary file
-while IFS= read -r path; do
+while IFS= read -r path || [[ -n "$path" ]]; do
   # Skip empty lines or lines that look like comments
   [[ -z "\$path" || "\$path" =~ ^# ]] && continue
   # Write the path to the temp file
