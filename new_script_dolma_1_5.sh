@@ -90,7 +90,7 @@ echo "Batch file found: \$batchfile"
 temp_include_file=$(mktemp)
 
 # Process the batch file and store paths in the temporary file
-while IFS= read -r path || [[ -n "$path" ]]; do
+while IFS= read -r path || [[ -n "\$path" ]]; do
   # Skip empty lines or lines that look like comments
   [[ -z "\$path" || "\$path" =~ ^# ]] && continue
   # Write the path to the temp file
