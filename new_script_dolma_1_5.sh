@@ -104,8 +104,8 @@ if [ ! -s "\$temp_include_file" ]; then
   exit 1
 fi
 
-# --- Step 4: Download files using wget in parallel ---
-echo "Downloading files using wget with \$SLURM_CPUS_PER_TASK parallel processes..."
+# --- Step 4: Download files using wget (single-threaded) ---
+echo "Downloading files using wget (single-threaded)..."
 
 # Create directory for downloads
 DOWNLOAD_DIR="$CACHE_DIR_BASE/repo"
@@ -118,21 +118,22 @@ cd "\$DOWNLOAD_DIR" || {
   exit 1
 }
 
-# Use xargs to run wget in parallel with number of parallel processes matching CPUs
-cat "\$temp_include_file" | xargs -0 -P "\$SLURM_CPUS_PER_TASK" -I{} wget --quiet {} || {
-    echo "Error: Parallel wget download failed."
-    rm "\$temp_include_file"
-    exit 1
-}
+# Use a simple loop to download files one at a time
+while IFS= read -r -d $'\0' url; do
+  echo "Downloading: $url"
+  wget --quiet "$url" || {
+    echo "Error: Failed to download $url"
+    continue
+  }
+done < "\$temp_include_file"
 
-echo "Download completed successfully with \$SLURM_CPUS_PER_TASK parallel processes."
+echo "Download completed successfully."
 
 # Clean up the temporary file
 rm "\$temp_include_file"
 
 # cd back to the original directory
 cd - || exit 1
-
 
 # --- Step 5: Run Python processing script ---
 uv run python "$PROCESSING_SCRIPT" \
