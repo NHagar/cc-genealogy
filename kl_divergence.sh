@@ -9,4 +9,7 @@
 #SBATCH --mail-user=nicholas.hagar@northwestern.edu
 #SBATCH --mail-type=ALL
 
+module purge all
+module load git-lfs
+
 uv run calculate_dataset_divergence.py --remote
