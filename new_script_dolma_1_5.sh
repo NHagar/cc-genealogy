@@ -120,9 +120,9 @@ cd "\$DOWNLOAD_DIR" || {
 
 # Use a simple loop to download files one at a time
 while IFS= read -r -d $'\0' url; do
-  echo "Downloading: $url"
-  wget --quiet "$url" || {
-    echo "Error: Failed to download $url"
+  echo "Downloading: \$url"
+  wget --quiet "\$url" || {
+    echo "Error: Failed to download \$url"
     continue
   }
 done < "\$temp_include_file"
