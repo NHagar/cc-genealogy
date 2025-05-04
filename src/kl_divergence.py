@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 import duckdb
 
 
-def pull_dataset(dataset_name: str) -> Path:
+def pull_dataset(dataset_name: str, is_remote: bool = False) -> Path:
     """
     Pull a dataset from a git repository into the data directory.
 
@@ -18,7 +18,7 @@ def pull_dataset(dataset_name: str) -> Path:
     """
 
     # Create the data directory if it doesn't exist
-    data_dir = Path("data")
+    data_dir = Path("data") if not is_remote else Path("/scratch/nrh146")
 
     # Define the full path to the dataset
     dataset_path = data_dir / dataset_name.split("/")[-1]
@@ -173,7 +173,10 @@ LEFT JOIN Q USING (url_host_name);
 
 
 def calculate_dataset_divergence(
-    dataset1: Union[str, List], dataset2: Union[str, List], cleanup: bool = True
+    dataset1: Union[str, List],
+    dataset2: Union[str, List],
+    is_remote: bool = False,
+    cleanup: bool = True,
 ) -> float:
     """
     Compare two datasets and calculate the Kullback-Leibler divergence.
@@ -196,12 +199,14 @@ def calculate_dataset_divergence(
     d2_metadata = []
 
     for dataset in dataset1:
-        dataset_path = pull_dataset(dataset)
+        dataset_path = pull_dataset(dataset, is_remote=is_remote)
         d1_metadata.append(
             {
                 "dataset_name": dataset,
                 "dataset_path": dataset_path,
-                "needs_aggregation": False if "CC-MAIN" in dataset else True,
+                "needs_aggregation": False
+                if "CC-MAIN" in dataset or "CC_MAIN" in dataset
+                else True,
             }
         )
 
@@ -211,7 +216,9 @@ def calculate_dataset_divergence(
             {
                 "dataset_name": dataset,
                 "dataset_path": dataset_path,
-                "needs_aggregation": False if "CC-MAIN" in dataset else True,
+                "needs_aggregation": False
+                if "CC-MAIN" in dataset or "CC_MAIN" in dataset
+                else True,
             }
         )
 
@@ -243,10 +250,3 @@ def calculate_dataset_divergence(
         print(f"Cleaned up output files: {output_path1}, {output_path2}")
 
     return kl_divergence
-
-
-if __name__ == "__main__":
-    calculate_dataset_divergence(
-        ["nhagar/CC-MAIN-2021-17_urls", "nhagar/CC-MAIN-2016-40_urls"],
-        ["nhagar/clean_mc4_it_urls"],
-    )
