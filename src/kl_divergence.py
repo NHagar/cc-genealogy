@@ -21,7 +21,12 @@ def pull_dataset(dataset_name: str, is_remote: bool = False) -> Path:
     """
 
     # Create the data directory if it doesn't exist
-    data_dir = Path("data") if not is_remote else Path("/scratch/nrh146")
+    if is_remote:
+        data_dir = Path("/scratch/nrh146")
+    else:
+        data_dir = Path("data")
+
+    logger.info(f"Pulling dataset {dataset_name} into {data_dir}")
 
     # Define the full path to the dataset
     dataset_path = data_dir / dataset_name.split("/")[-1]
@@ -216,7 +221,7 @@ def calculate_dataset_divergence(
         )
 
     for dataset in dataset2:
-        dataset_path = pull_dataset(dataset)
+        dataset_path = pull_dataset(dataset, is_remote=is_remote)
         d2_metadata.append(
             {
                 "dataset_name": dataset,
