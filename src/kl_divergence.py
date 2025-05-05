@@ -238,9 +238,14 @@ def calculate_dataset_divergence(
     logger.info(f"Query for dataset 1:\n{query1}\n")
     logger.info(f"Query for dataset 2:\n{query2}\n")
 
+    if is_remote:
+        data_dir = Path("/scratch/nrh146")
+    else:
+        data_dir = Path("data")
+
     # Run the queries and save the results
-    output_path1 = Path("data") / "dataset1_results.parquet"
-    output_path2 = Path("data") / "dataset2_results.parquet"
+    output_path1 = data_dir / "dataset1_results.parquet"
+    output_path2 = data_dir / "dataset2_results.parquet"
     run_query(query1, output_path1)
     run_query(query2, output_path2)
 
