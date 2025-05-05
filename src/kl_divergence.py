@@ -62,9 +62,9 @@ def build_query(dataset_metadata: List[Dict]) -> str:
         str: The full SQL query.
     """
     # for datasets that haven't been pre-aggregated, count each row as 1
-    no_agg = "SELECT url_host_name, url_count FROM '{path}/data/*.parquet'"
+    no_agg = "SELECT url_host_name, url_count FROM '{path}/data/**/*.parquet'"
     # for datasets that need aggregation, do the count here
-    agg = "SELECT domain AS url_host_name, COUNT(*) AS url_count FROM '{path}/*.parquet' GROUP BY 1"
+    agg = "SELECT domain AS url_host_name, COUNT(*) AS url_count FROM '{path}/**/*.parquet' GROUP BY 1"
 
     cte_template = "subset{idx} AS (\n    {select_logic}\n)"
     select_stmts = []
