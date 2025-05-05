@@ -8,8 +8,28 @@
 #SBATCH --job-name=kl_divergence  ## When you run squeue -u NETID this is how you can identify the job
 #SBATCH --mail-user=nicholas.hagar@northwestern.edu
 #SBATCH --mail-type=ALL
+#SBATCH --output=logs/kl_divergence_%j.out  # Standard output log
+#SBATCH --error=logs/kl_divergence_%j.err   # Standard error log
 
+# Ensure output directory exists
+mkdir -p logs
+
+# Print job information for debugging
+echo "Job ID: $SLURM_JOB_ID"
+echo "Running on host: $(hostname)"
+echo "Running on cluster: $(hostname -d)"
+echo "Start time: $(date)"
+echo "Directory: $(pwd)"
+
+# Ensure Python output is not buffered so logs appear in real-time
+export PYTHONUNBUFFERED=1
+
+# Load required modules
 module purge all
 module load git-lfs
 
-uv run calculate_dataset_divergence.py --remote
+# Run the script with explicit logging level
+echo "Starting KL divergence calculation at $(date)"
+uv run calculate_dataset_divergence.py --remote --log-level INFO
+
+echo "Job completed at $(date)"

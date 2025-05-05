@@ -6,11 +6,39 @@ Tracks progress and avoids reprocessing already analyzed pairs.
 
 import argparse
 import json
+import logging
+import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Union
 
 from src.generate_dependency_mapping import pairs
 from src.kl_divergence import calculate_dataset_divergence
+
+
+def setup_logging(log_level=logging.INFO):
+    """Set up logging configuration for both file and console output."""
+    # Create logs directory if it doesn't exist
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+
+    # Create a unique log filename based on timestamp
+    log_file = log_dir / f"kl_divergence_{os.getpid()}.log"
+
+    # Configure root logger
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[
+            # File handler for persistent logs
+            logging.FileHandler(log_file),
+            # Stream handler for console/Slurm output
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
+
+    # Return the configured logger
+    return logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -28,6 +56,13 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default="data/dataset_divergence.json",
         help="Path to output file",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging level",
     )
     return parser.parse_args()
 
@@ -84,7 +119,7 @@ def load_completed_pairs(output_path: Path) -> Dict[str, float]:
         with open(output_path, "r") as f:
             return json.load(f)
     except json.JSONDecodeError:
-        print(f"Warning: Could not parse {output_path}. Starting with empty results.")
+        logger.warning(f"Could not parse {output_path}. Starting with empty results.")
         return {}
 
 
@@ -102,16 +137,25 @@ def save_results(results: Dict[str, float], output_path: Path):
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"Results saved to {output_path}")
+    logger.info(f"Results saved to {output_path}")
 
 
 def main():
     args = parse_args()
+
+    # Set up logging with the specified log level
+    global logger
+    log_level = getattr(logging, args.log_level)
+    logger = setup_logging(log_level)
+
+    logger.info("Starting KL divergence calculation")
+    logger.info(f"Remote mode: {args.remote}")
+
     output_path = Path(args.output)
 
     # Load already processed pairs
     completed_results = load_completed_pairs(output_path)
-    print(f"Found {len(completed_results)} already processed pairs.")
+    logger.info(f"Found {len(completed_results)} already processed pairs.")
 
     # Process all pairs
     for i, (source, target) in enumerate(pairs):
@@ -119,12 +163,12 @@ def main():
 
         # Skip if already processed
         if pair_key in completed_results:
-            print(f"Skipping already processed pair: {pair_key}")
+            logger.info(f"Skipping already processed pair: {pair_key}")
             continue
 
-        print(f"Processing pair {i + 1}/{len(pairs)}: {pair_key}")
-        print(f"  Source: {source}")
-        print(f"  Target: {target}")
+        logger.info(f"Processing pair {i + 1}/{len(pairs)}: {pair_key}")
+        logger.info(f"  Source: {source}")
+        logger.info(f"  Target: {target}")
 
         try:
             # Calculate KL divergence between the datasets
@@ -134,16 +178,16 @@ def main():
 
             # Store the result
             completed_results[pair_key] = kl_divergence
-            print(f"  KL divergence: {kl_divergence}")
+            logger.info(f"  KL divergence: {kl_divergence}")
 
             # Save after each successful calculation
             save_results(completed_results, output_path)
 
         except Exception as e:
-            print(f"Error processing pair {pair_key}: {e}")
+            logger.exception(f"Error processing pair {pair_key}: {e}")
 
-    print(f"Processed {len(completed_results)} pairs in total.")
-    print(f"Results saved to {output_path}")
+    logger.info(f"Processed {len(completed_results)} pairs in total.")
+    logger.info(f"Results saved to {output_path}")
 
 
 if __name__ == "__main__":

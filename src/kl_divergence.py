@@ -1,9 +1,12 @@
+import logging
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Union
 
 import duckdb
+
+logger = logging.getLogger(__name__)
 
 
 def pull_dataset(dataset_name: str, is_remote: bool = False) -> Path:
@@ -39,10 +42,10 @@ def pull_dataset(dataset_name: str, is_remote: bool = False) -> Path:
             check=True,
             capture_output=True,
         )
-        print(f"Successfully cloned {dataset_name} into {dataset_path}")
+        logger.info(f"Successfully cloned {dataset_name} into {dataset_path}")
         return dataset_path
     except subprocess.CalledProcessError as e:
-        print(f"Failed to clone repository: {e}")
+        logger.error(f"Failed to clone repository: {e}")
         raise
 
 
@@ -113,17 +116,19 @@ def run_query(query: str, output_path: Path, force: bool = False):
     Returns:
         None
     """
-    print(f"Running query:\n{query}\n")
-    print(f"Saving results to {output_path}")
+    logger.info(f"Running query:\n{query}\n")
+    logger.info(f"Saving results to {output_path}")
 
     if output_path.exists() and not force:
-        print(f"Output file {output_path} already exists. Use force=True to overwrite.")
+        logger.info(
+            f"Output file {output_path} already exists. Use force=True to overwrite."
+        )
         return
 
     con = duckdb.connect()
     con.execute(f"COPY (SELECT * FROM ({query})) TO '{output_path}' (FORMAT PARQUET)")
     con.close()
-    print(f"Query results saved to {output_path}")
+    logger.info(f"Query results saved to {output_path}")
 
 
 def calculate_kl_divergence(path1: Path, path2: Path) -> float:
@@ -164,7 +169,7 @@ SELECT
 FROM P
 LEFT JOIN Q USING (url_host_name);
 """
-    print(f"Running KL divergence query:\n{query}\n")
+    logger.info(f"Running KL divergence query:\n{query}\n")
     con = duckdb.connect()
     result = con.execute(query).fetchone()
     con.close()
@@ -225,8 +230,8 @@ def calculate_dataset_divergence(
     # Build the SQL query for each dataset
     query1 = build_query(d1_metadata)
     query2 = build_query(d2_metadata)
-    print(f"Query for dataset 1:\n{query1}\n")
-    print(f"Query for dataset 2:\n{query2}\n")
+    logger.info(f"Query for dataset 1:\n{query1}\n")
+    logger.info(f"Query for dataset 2:\n{query2}\n")
 
     # Run the queries and save the results
     output_path1 = Path("data") / "dataset1_results.parquet"
@@ -236,17 +241,17 @@ def calculate_dataset_divergence(
 
     # Calculate the KL divergence
     kl_divergence = calculate_kl_divergence(output_path1, output_path2)
-    print(f"KL divergence between {dataset1} and {dataset2}: {kl_divergence}")
+    logger.info(f"KL divergence between {dataset1} and {dataset2}: {kl_divergence}")
 
     # Clean up local files if requested
     if cleanup:
         for dataset in d1_metadata + d2_metadata:
             dataset_path = Path(dataset["dataset_path"])
             if dataset_path.exists():
-                print(f"Cleaning up {dataset_path}")
+                logger.info(f"Cleaning up {dataset_path}")
                 shutil.rmtree(dataset_path)
         output_path1.unlink(missing_ok=True)
         output_path2.unlink(missing_ok=True)
-        print(f"Cleaned up output files: {output_path1}, {output_path2}")
+        logger.info(f"Cleaned up output files: {output_path1}, {output_path2}")
 
     return kl_divergence
