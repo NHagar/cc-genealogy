@@ -173,7 +173,7 @@ def main():
         try:
             # Calculate KL divergence between the datasets
             kl_divergence = KlDivergence(source, target, is_remote=args.remote)
-            kl_divergence_stat = kl_divergence.calculate_kl_divergence()
+            kl_divergence_stat = kl_divergence.calculate_dataset_divergence()
 
             # Store the result
             completed_results[pair_key] = kl_divergence_stat

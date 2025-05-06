@@ -86,16 +86,20 @@ class KlDivergence:
             None
         """
         con = duckdb.connect(f"{self.data_dir}/intermediate.db", read_only=False)
-        con.execute("CREATE TABLE dataset1 (url_host_name VARCHAR, url_count BIGINT)")
-        con.execute("CREATE TABLE dataset2 (url_host_name VARCHAR, url_count BIGINT)")
+        con.execute(
+            "CREATE OR REPLACE TABLE dataset1 (url_host_name VARCHAR, url_count BIGINT)"
+        )
+        con.execute(
+            "CREATE OR REPLACE TABLE dataset2 (url_host_name VARCHAR, url_count BIGINT)"
+        )
 
         for dataset in self.dataset1:
             dataset_path = self._pull_dataset(dataset)
 
             if "CC-MAIN" in dataset or "CC_MAIN" in dataset:
-                query = f"SELECT domain AS url_host_name, COUNT(*) AS url_count FROM '{dataset_path}/**/*.parquet' GROUP BY 1"
-            else:
                 query = f"SELECT url_host_name, url_count FROM '{dataset_path}/data/**/*.parquet'"
+            else:
+                query = f"SELECT domain AS url_host_name, COUNT(*) AS url_count FROM '{dataset_path}/**/*.parquet' GROUP BY 1"
 
             logger.info(f"Running query for dataset {dataset}:\n{query}\n")
             con.execute(f"INSERT INTO dataset1 SELECT * FROM ({query})")
@@ -107,9 +111,9 @@ class KlDivergence:
             dataset_path = self._pull_dataset(dataset)
 
             if "CC-MAIN" in dataset or "CC_MAIN" in dataset:
-                query = f"SELECT domain AS url_host_name, COUNT(*) AS url_count FROM '{dataset_path}/**/*.parquet' GROUP BY 1"
-            else:
                 query = f"SELECT url_host_name, url_count FROM '{dataset_path}/data/**/*.parquet'"
+            else:
+                query = f"SELECT domain AS url_host_name, COUNT(*) AS url_count FROM '{dataset_path}/**/*.parquet' GROUP BY 1"
 
             logger.info(f"Running query for dataset {dataset}:\n{query}\n")
             con.execute(f"INSERT INTO dataset2 SELECT * FROM ({query})")
