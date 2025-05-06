@@ -278,7 +278,7 @@ dataset_rules = {
     "hplt/hplt2.0_cleaned": {
         "variants": {
             "default": {
-                "prefix": ["data/"],
+                "prefix": None,
                 "suffix": ".parquet",
                 "exclude": None,
                 "url_extraction": "SELECT u",
