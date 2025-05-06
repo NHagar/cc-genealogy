@@ -255,6 +255,36 @@ dataset_rules = {
             },
         }
     },
+    "agentlans/common-crawl-sample": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".json.gz",
+                "exclude": ["test"],
+                "url_extraction": "SELECT uri",
+            }
+        }
+    },
+    "devngho/culturax-mini-nonshuffled": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "hplt/hplt2.0_cleaned": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT u",
+            }
+        }
+    },
 }
 
 
