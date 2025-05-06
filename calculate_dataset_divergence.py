@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 from src.generate_dependency_mapping import pairs
-from src.kl_divergence import calculate_dataset_divergence
+from src.kl_divergence import KlDivergence
 
 
 def setup_logging(log_level=logging.INFO):
@@ -172,13 +172,11 @@ def main():
 
         try:
             # Calculate KL divergence between the datasets
-            kl_divergence = calculate_dataset_divergence(
-                source, target, is_remote=args.remote, cleanup=True
-            )
+            kl_divergence = KlDivergence(source, target, is_remote=args.remote)
+            kl_divergence_stat = kl_divergence.calculate_dataset_divergence()
 
             # Store the result
-            completed_results[pair_key] = kl_divergence
-            logger.info(f"  KL divergence: {kl_divergence}")
+            completed_results[pair_key] = kl_divergence_stat
 
             # Save after each successful calculation
             save_results(completed_results, output_path)
