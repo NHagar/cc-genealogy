@@ -285,6 +285,36 @@ dataset_rules = {
             }
         }
     },
+    "allenai/olmoe-mix-0924": {
+        "variants": {
+            "default": {
+                "prefix": ["data/dclm"],
+                "suffix": ".json.zst",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            }
+        }
+    },
+    "huggingfacem4/obelics": {
+        "variants": {
+            "default": {
+                "prefix": ["data/train-"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT json_extract_string(general_metadata, '$.url')",
+            }
+        }
+    },
+    "cis-lmu/glotcc-v1": {
+        "variants": {
+            "default": {
+                "prefix": ["v1.0/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": """SELECT "warc-target-uri" """,
+            }
+        }
+    },
 }
 
 
