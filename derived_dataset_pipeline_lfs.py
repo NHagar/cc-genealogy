@@ -116,8 +116,10 @@ def main():
 
         if suffix == ".parquet":
             file_read_sql = f"READ_PARQUET([{paths_string}])"
-        else:
+        elif ".json" in suffix:
             file_read_sql = f"READ_JSON([{paths_string}], format = 'newline_delimited')"
+        else:
+            file_read_sql = f"READ_CSV([{paths_string}])"
 
         logger.debug("Mapping TLD extraction function")
         con = duckdb.connect(database=":memory:")
