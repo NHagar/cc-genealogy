@@ -315,6 +315,46 @@ dataset_rules = {
             }
         }
     },
+    "open-web-math/open-web-math": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "huggingfacetb/dclm-edu": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "finnish-nlp/mc4_fi_cleaned": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".csv",
+                "exclude": ["valid"],
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "ontocord/culturay": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".jsonl.zst",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 

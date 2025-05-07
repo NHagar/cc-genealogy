@@ -117,7 +117,7 @@ def main():
         if suffix == ".parquet":
             file_read_sql = f"READ_PARQUET([{paths_string}])"
         else:
-            file_read_sql = f"READ_JSON([{paths_string}], format = 'newline_delimited', compression='gzip')"
+            file_read_sql = f"READ_JSON([{paths_string}], format = 'newline_delimited')"
 
         logger.debug("Mapping TLD extraction function")
         con = duckdb.connect(database=":memory:")
