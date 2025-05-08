@@ -355,6 +355,52 @@ dataset_rules = {
             }
         }
     },
+    "vblagoje/cc_news": {
+        "variants": {
+            "default": {
+                "prefix": ["plain_text/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "huggingfacetb/finemath": {
+        "variants": {
+            "3plus": {
+                "prefix": ["finemath-3plus/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            },
+            "4plus": {
+                "prefix": ["finemath-4plus/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            },
+        }
+    },
+    "richnachos/georgian-corpus": {
+        "variants": {
+            "default": {
+                "prefix": ["corpus/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "epfml/fineweb2-hq": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
