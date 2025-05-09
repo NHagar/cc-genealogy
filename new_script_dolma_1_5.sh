@@ -100,7 +100,7 @@ download_current_batch_files() {
 
     if xargs -0 -r -n 1 -P "$PARALLEL_WGET_JOBS_PER_BATCH" -I {} \
         wget -P "$DOWNLOAD_PROCESSING_DIR" \
-            -nc -c --tries=3 \
+            --no-verbose -nc -c --tries=3 \
             --dns-timeout=30 --connect-timeout=45 --timeout=90 --read-timeout=180 \
             --user-agent="DolmaSimplifiedOrchestratorWget/1.0 (Contact/$MAIL_USER)" \
             "{}" < "$temp_url_list_file"; then
