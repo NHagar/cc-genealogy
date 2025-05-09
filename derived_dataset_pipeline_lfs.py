@@ -123,6 +123,7 @@ def main():
 
         logger.debug("Mapping TLD extraction function")
         con = duckdb.connect(database=":memory:")
+        con.execute("SET enable_progress_bar = true;")
         # Register the function as a UDF
         con.create_function(
             "extract_domain",  # Name of the UDF in SQL queries
