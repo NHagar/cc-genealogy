@@ -1,0 +1,3 @@
+ALTER TABLE hf_data SET TBLPROPERTIES (
+    'projection.dataset_name.values' = 'c4_urls_realnewslike,c4-chinese-zhtw_urls,cc_news_urls,clean_mc4_it_urls,common-crawl-sample_urls,culturax_urls,culturax-mini-nonshuffled_urls,dclm-baseline-1.0-parquet_urls,dclm-dedup_urls,falcon-refinedweb_urls,finemath_urls_3plus,finemath_urls_4plus,fineweb_urls,fineweb-2_urls,fineweb-edu_urls,georgian-corpus_urls,glotcc-v1_urls,infimm-webmath-40b_urls,madlad-400_urls_clean,madlad-400_urls_noisy,mc4_fi_cleaned_urls,mc4-es-sampled_urls,moscar_urls,obelics_urls,olmoe-mix-0924_urls,onlysports_dataset_urls,open-web-math_urls,zyda_urls,zyda-2_urls'
+);
