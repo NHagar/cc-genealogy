@@ -7,7 +7,7 @@ VARIANT="v1_5"
 # Max parallel wget processes to run on this (orchestrator) node for each batch download
 PARALLEL_WGET_JOBS_PER_BATCH=4 # Adjust based on login node policy and network capacity
 CACHE_DIR_BASE="/scratch/nrh146/cache-dolma-v1_5"
-PROCESSING_SCRIPT="python_script_simplified_input.py" # Name of the new Python script
+PROCESSING_SCRIPT="derived_dataset_pipeline_dolma.py" # Name of the new Python script
 
 # Slurm Configuration
 SLURM_ACCOUNT="p32491"
