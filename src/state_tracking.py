@@ -401,6 +401,36 @@ dataset_rules = {
             }
         }
     },
+    "oscar-corpus/oscar-2109": {
+        "variants": {
+            "default": {
+                "prefix": ["packaged/"],
+                "suffix": ".jsonl.gz",
+                "exclude": [".txt"],
+                "url_extraction": """SELECT headers."warc-target-uri" """,
+            }
+        }
+    },
+    "oscar-corpus/oscar-2201": {
+        "variants": {
+            "default": {
+                "prefix": ["compressed/"],
+                "suffix": ".jsonl.gz",
+                "exclude": None,
+                "url_extraction": """SELECT warc_headers."warc-target-uri" """,
+            }
+        }
+    },
+    "oscar-corpus/oscar-2301": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".jsonl.zst",
+                "exclude": None,
+                "url_extraction": """SELECT warc_headers."warc-target-uri" """,
+            }
+        }
+    },
 }
 
 
