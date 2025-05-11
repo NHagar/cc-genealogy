@@ -431,6 +431,52 @@ dataset_rules = {
             }
         }
     },
+    "yhavinga/mc4_nl_cleaned": {
+        "variants": {
+            "default": {
+                "prefix": ["mc4_nl_cleaned/train"],
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "faur-ai/fulg": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".json.gz",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "projecte-aina/catalog": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
+    "openllm-france/lucie-training-dataset": {
+        "variants": {
+            "default": {
+                "prefix": [
+                    "data/v1.1/natural/de/RedPajama",
+                    "data/v1.1/natural/en/FineWebEdu",
+                    "data/v1.1/natural/es/RedPajama",
+                    "data/v1.1/natural/fr/RedPajama",
+                    "data/v1.1/natural/it/RedPajama",
+                ],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
