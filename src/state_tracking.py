@@ -431,6 +431,16 @@ dataset_rules = {
             }
         }
     },
+    "oscar-corpus/colossal-oscar-1.0": {
+        "variants": {
+            "default": {
+                "prefix": None,
+                "suffix": ".jsonl.zst",
+                "exclude": None,
+                "url_extraction": """SELECT warc_headers."warc-target-uri" """,
+            }
+        }
+    },
     "yhavinga/mc4_nl_cleaned": {
         "variants": {
             "default": {

@@ -1613,7 +1613,7 @@ pairs = [
     (["nhagar/fineweb_2_urls"], ["nhagar/fineweb2-hq_urls"]),
     (
         ["nhagar/fineweb_edu_urls", "nhagar/redpajama-data-v2_urls"],
-        ["lucie-training-dataset_urls"],
+        ["nhagar/lucie-training-dataset_urls"],
     ),
     (
         [
