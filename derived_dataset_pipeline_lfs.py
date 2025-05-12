@@ -1,5 +1,6 @@
 import argparse
 import logging
+import lzma
 import os
 import sys
 
@@ -109,6 +110,19 @@ def main():
         extraction_sql = dataset_rules[args.dataset]["variants"][args.variant][
             "url_extraction"
         ]
+
+        if "legal-mc4" in args.dataset:
+            # For legal-mc4, we need to decompress the files
+            for fpath in fpaths:
+                with lzma.open(
+                    f"{args.cache_dir}/repo/{fpath}", "rb"
+                ) as compressed_file:
+                    decompressed_data = compressed_file.read()
+                with open(
+                    f"{args.cache_dir}/repo/{fpath[:-3]}", "wb"
+                ) as decompressed_file:
+                    decompressed_file.write(decompressed_data)
+            fpaths = [f[:-3] for f in fpaths]
 
         # Prepare the file paths for the SQL IN clause
         formatted_paths = [f"'{args.cache_dir}/repo/{fpath}'" for fpath in fpaths]

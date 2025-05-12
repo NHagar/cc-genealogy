@@ -477,6 +477,36 @@ dataset_rules = {
             }
         }
     },
+    "ontocord/mixturevitae-fineweb-permissive-multilingual-2m": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".jsonl",
+                "exclude": None,
+                "url_extraction": "SELECT metadata.url",
+            }
+        }
+    },
+    "eduagarcia/crawlpt_dedup": {
+        "variants": {
+            "default": {
+                "prefix": ["OSCAR-2301/"],
+                "suffix": ".parquet",
+                "exclude": None,
+                "url_extraction": """SELECT meta.warc_headers."warc-target-uri" """,
+            }
+        }
+    },
+    "joelniklaus/legal-mc4": {
+        "variants": {
+            "default": {
+                "prefix": ["data/"],
+                "suffix": ".jsonl.xz",
+                "exclude": ["validation"],
+                "url_extraction": "SELECT url",
+            }
+        }
+    },
 }
 
 
