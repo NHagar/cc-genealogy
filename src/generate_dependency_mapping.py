@@ -1740,4 +1740,5 @@ pairs = [
         ],
         ["nhagar/colossal-oscar-1.0_urls"],
     ),
+    (["nhagar/CC-MAIN-2022-40_urls"], ["nhagar/hplt1.2_urls"]),
 ]
