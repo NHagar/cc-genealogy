@@ -51,12 +51,7 @@ def extract_domain(url: str) -> str:
 
 
 def custom_process_file(fpath, selector):
-    if fpath.suffix == ".gz":
-        command = f"zcat {fpath} | jq -r '.{selector}'"
-    elif fpath.suffix == ".zst":
-        command = f"zstdcat {fpath} | jq -r '.{selector}'"
-    else:
-        command = f"cat {fpath} | jq -r '.{selector}'"
+    command = f"zcat {fpath} | jq -r '.{selector}'"
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"Failed to process file {fpath}: {result.stderr}")
