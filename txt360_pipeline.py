@@ -13,7 +13,7 @@ REPO_ID = "LLM360/TxT360"  # REQUIRED: Replace with your dataset ID
 REPO_TYPE = "dataset"  # Or "model", "space"
 DIRECTORY_IN_REPO = "data/common-crawl"
 
-LOCAL_DOWNLOAD_BASE_DIR = "scratch/nrh146/hf_batches_data_fail_fast"  # Base directory
+LOCAL_DOWNLOAD_BASE_DIR = "/scratch/nrh146/hf_batches_data_fail_fast"  # Base directory
 STATE_FILE = os.path.join(LOCAL_DOWNLOAD_BASE_DIR, "processed_files.txt")
 TARGET_BATCH_SIZE_GB = 500
 TARGET_BATCH_SIZE_BYTES = TARGET_BATCH_SIZE_GB * (1024**3)
