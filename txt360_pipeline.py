@@ -62,7 +62,7 @@ def custom_process_file(fpath, selector):
     df = pd.DataFrame({"url": extracted_urls, "domain": domains})
     df = df.dropna()
     df.to_parquet(
-        fpath.with_suffix(".parquet"),
+        fpath.replace("jsonl.gz", "parquet"),
         index=False,
         compression="zstd",
         engine="pyarrow",
