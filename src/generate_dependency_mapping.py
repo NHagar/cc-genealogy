@@ -1620,7 +1620,7 @@ pairs = [
             "nhagar/oscar-2301_urls",
             "nhagar/oscar-2201_urls",
             "nhagar/c4_urls_multilingual",
-            "nhagar/colossal_oscar_1.0_urls",
+            "nhagar/colossal-oscar-1.0_urls",
         ],
         ["nhagar/catalog_urls"],
     ),
@@ -1725,4 +1725,19 @@ pairs = [
         ["nhagar/fulg_urls"],
     ),
     (["nhagar/c4_urls_multilingual"], ["nhagar/mc4_nl_cleaned"]),
+    (
+        [
+            "nhagar/CC-MAIN-2020-40_urls",
+            "nhagar/CC-MAIN-2020-16_urls",
+            "nhagar/CC-MAIN-2020-45_urls",
+            "nhagar/CC-MAIN-2020-50_urls",
+            "nhagar/CC-MAIN-2020-24_urls",
+            "nhagar/CC-MAIN-2020-29_urls",
+            "nhagar/CC-MAIN-2021-43_urls",
+            "nhagar/CC-MAIN-2021-49_urls",
+            "nhagar/CC-MAIN-2022-27_urls",
+            "nhagar/CC-MAIN-2023-23_urls",
+        ],
+        ["nhagar/colossal-oscar-1.0_urls"],
+    ),
 ]
