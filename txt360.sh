@@ -12,4 +12,6 @@
 
 module purge all
 
+module load jq
+
 uv run txt360_pipeline.py
