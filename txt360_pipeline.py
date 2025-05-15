@@ -187,7 +187,7 @@ def main():
                 # If mark_file_as_processed fails, script will exit.
                 mark_file_as_processed(STATE_FILE, file_info["repo_path"])
 
-            parquet_file = current_batch_download_dir / "batch.parquet"
+            parquet_file = os.path.join(current_batch_download_dir, "batch.parquet")
             con.execute(
                 f"COPY (SELECT * FROM read_parquet('{str(current_batch_download_dir)}/*.parquet')) TO '{str(parquet_file)}';"
             )
