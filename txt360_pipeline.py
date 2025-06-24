@@ -1,45 +1,127 @@
-import os
-import shutil
 import subprocess
+from multiprocessing import Pool
+from pathlib import Path
+from typing import Union
 
-import duckdb
 import pandas as pd
 import tldextract
-from huggingface_hub import HfApi, hf_hub_download
-from tqdm import tqdm  # Optional: for progress bars
+from huggingface_hub import HfApi, snapshot_download
+from tqdm import tqdm
 
-# --- Configuration ---
-REPO_ID = "LLM360/TxT360"  # REQUIRED: Replace with your dataset ID
-REPO_TYPE = "dataset"  # Or "model", "space"
-DIRECTORY_IN_REPO = "data/common-crawl"
+snapshots = [
+    "CC-MAIN-2013-20",
+    "CC-MAIN-2013-48",
+    "CC-MAIN-2014-10",
+    "CC-MAIN-2014-15",
+    "CC-MAIN-2014-23",
+    "CC-MAIN-2014-35",
+    "CC-MAIN-2014-41",
+    "CC-MAIN-2014-42",
+    "CC-MAIN-2014-49",
+    "CC-MAIN-2014-52",
+    "CC-MAIN-2015-06",
+    "CC-MAIN-2015-11",
+    "CC-MAIN-2015-14",
+    "CC-MAIN-2015-18",
+    "CC-MAIN-2015-22",
+    "CC-MAIN-2015-27",
+    "CC-MAIN-2015-32",
+    "CC-MAIN-2015-35",
+    "CC-MAIN-2015-40",
+    "CC-MAIN-2015-48",
+    "CC-MAIN-2016-07",
+    "CC-MAIN-2016-18",
+    "CC-MAIN-2016-22",
+    "CC-MAIN-2016-26",
+    "CC-MAIN-2016-30",
+    "CC-MAIN-2016-36",
+    "CC-MAIN-2016-40",
+    "CC-MAIN-2016-44",
+    "CC-MAIN-2016-50",
+    "CC-MAIN-2017-04",
+    "CC-MAIN-2017-09",
+    "CC-MAIN-2017-13",
+    "CC-MAIN-2017-17",
+    "CC-MAIN-2017-22",
+    "CC-MAIN-2017-26",
+    "CC-MAIN-2017-30",
+    "CC-MAIN-2017-34",
+    "CC-MAIN-2017-39",
+    "CC-MAIN-2017-43",
+    "CC-MAIN-2017-47",
+    "CC-MAIN-2017-51",
+    "CC-MAIN-2018-05",
+    "CC-MAIN-2018-09",
+    "CC-MAIN-2018-13",
+    "CC-MAIN-2018-17",
+    "CC-MAIN-2018-22",
+    "CC-MAIN-2018-26",
+    "CC-MAIN-2018-30",
+    "CC-MAIN-2018-34",
+    "CC-MAIN-2018-39",
+    "CC-MAIN-2018-43",
+    "CC-MAIN-2018-47",
+    "CC-MAIN-2018-51",
+    "CC-MAIN-2019-04",
+    "CC-MAIN-2019-09",
+    "CC-MAIN-2019-13",
+    "CC-MAIN-2019-18",
+    "CC-MAIN-2019-22",
+    "CC-MAIN-2019-26",
+    "CC-MAIN-2019-30",
+    "CC-MAIN-2019-35",
+    "CC-MAIN-2019-39",
+    "CC-MAIN-2019-43",
+    "CC-MAIN-2019-47",
+    "CC-MAIN-2019-51",
+    "CC-MAIN-2020-05",
+    "CC-MAIN-2020-10",
+    "CC-MAIN-2020-16",
+    "CC-MAIN-2020-24",
+    "CC-MAIN-2020-29",
+    "CC-MAIN-2020-34",
+    "CC-MAIN-2020-40",
+    "CC-MAIN-2020-45",
+    "CC-MAIN-2020-50",
+    "CC-MAIN-2021-04",
+    "CC-MAIN-2021-10",
+    "CC-MAIN-2021-17",
+    "CC-MAIN-2021-21",
+    "CC-MAIN-2021-25",
+    "CC-MAIN-2021-31",
+    "CC-MAIN-2021-39",
+    "CC-MAIN-2021-43",
+    "CC-MAIN-2021-49",
+    "CC-MAIN-2022-05",
+    "CC-MAIN-2022-21",
+    "CC-MAIN-2022-27",
+    "CC-MAIN-2022-33",
+    "CC-MAIN-2022-40",
+    "CC-MAIN-2022-49",
+    "CC-MAIN-2023-06",
+    "CC-MAIN-2023-14",
+    "CC-MAIN-2023-23",
+    "CC-MAIN-2023-40",
+    "CC-MAIN-2023-50",
+    "CC-MAIN-2024-10",
+    "CC-MAIN-2024-18",
+    "CC-MAIN-2024-22",
+    "CC-MAIN-2024-26",
+    "CC-MAIN-2024-30",
+]
 
-LOCAL_DOWNLOAD_BASE_DIR = "/scratch/nrh146/hf_batches_data_fail_fast"  # Base directory
-STATE_FILE = os.path.join(LOCAL_DOWNLOAD_BASE_DIR, "processed_files.txt")
-TARGET_BATCH_SIZE_GB = 500
-TARGET_BATCH_SIZE_BYTES = TARGET_BATCH_SIZE_GB * (1024**3)
 
-# --- Helper Functions ---
-con = duckdb.connect(database=":memory:", read_only=False)
-
-
-def load_processed_files(state_file_path):
-    """Loads the set of processed file paths from the state file. Fails if errors."""
-    if not os.path.exists(state_file_path):
-        return set()
-    # If file exists but is unreadable, this will now raise an IOError/OSError
-    with open(state_file_path, "r") as f:
-        return set(line.strip() for line in f if line.strip())
+def download_snapshot(snapshot: str, local_dir: str):
+    snapshot_download(
+        repo_id="llm360/txt360",
+        repo_type="dataset",
+        local_dir=local_dir,
+        allow_patterns=f"data/common-crawl/{snapshot}/**/*.jsonl.gz",
+        max_workers=2,
+    )
 
 
-def mark_file_as_processed(state_file_path, repo_file_path):
-    """Marks a file as processed. Fails if errors."""
-    os.makedirs(os.path.dirname(state_file_path), exist_ok=True)
-    # If file cannot be written, this will now raise an IOError/OSError
-    with open(state_file_path, "a") as f:
-        f.write(repo_file_path + "\n")
-
-
-def extract_domain(url: str) -> str:
+def extract_domain(url: str) -> Union[str, None]:
     if url is None:
         return None
     try:
@@ -50,11 +132,11 @@ def extract_domain(url: str) -> str:
         return None  # Handle potential errors in tldextract
 
 
-def custom_process_file(fpath, selector):
-    command = f"zcat {fpath} | jq -r '.{selector}'"
+def process_url_file(args):
+    fpath, selector = args
+    command = f"gunzip -c {fpath} | jq -r '.{selector}'"
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Failed to process file {fpath}: {result.stderr}")
         raise Exception(f"Failed to process file {fpath}: {result.stderr}")
     extracted_urls = result.stdout.splitlines()
     domains = [extract_domain(url) for url in extracted_urls]
@@ -62,7 +144,7 @@ def custom_process_file(fpath, selector):
     df = pd.DataFrame({"url": extracted_urls, "domain": domains})
     df = df.dropna()
     df.to_parquet(
-        fpath.replace("jsonl.gz", "parquet"),
+        fpath.with_suffix(".parquet"),
         index=False,
         compression="zstd",
         engine="pyarrow",
@@ -70,162 +152,92 @@ def custom_process_file(fpath, selector):
     return True
 
 
-def main():
-    """
-    Main function to download, process, and manage dataset files in batches.
-    This version will fail fast on errors in critical operations.
-    """
-    print("--- Hugging Face Batch Downloader & Processor (Fail Fast Mode) ---")
-    print(f"Dataset ID: {REPO_ID}")
-    print(f"Directory in Repo: '{DIRECTORY_IN_REPO if DIRECTORY_IN_REPO else 'Root'}'")
-    print(f"Target batch size: {TARGET_BATCH_SIZE_GB} GB")
-    print(f"Local base directory: {LOCAL_DOWNLOAD_BASE_DIR}")
-    print(f"State file: {STATE_FILE}")
-    print("-" * 50)
+def process_urls_parallel(local_dir: str, snapshot: str):
+    snapshot_path = f"{local_dir}/data/common-crawl/{snapshot}"
+    json_files = list(Path(snapshot_path).glob("**/*.jsonl.gz"))
 
-    if REPO_ID == "your-username/your-dataset-name":
-        # This is a configuration error, so a print and return is reasonable.
-        print(
-            "ERROR: Please update REPO_ID in the script with your Hugging Face dataset ID."
+    with Pool(processes=8) as pool:
+        list(
+            tqdm(
+                pool.imap(
+                    process_url_file,
+                    [
+                        (
+                            file,
+                            ".meta.url",
+                        )
+                        for file in json_files
+                    ],
+                ),
+                total=len(json_files),
+                desc="Processing files",
+            )
         )
+
+
+def collate_parquet_files(local_dir: str):
+    parquet_files = list(Path(local_dir).glob("**/*.parquet"))
+    if not parquet_files:
+        print("No parquet files found to collate.")
         return
 
-    os.makedirs(LOCAL_DOWNLOAD_BASE_DIR, exist_ok=True)
+    df_list = []
+    for file in tqdm(parquet_files, desc="Reading parquet files"):
+        df = pd.read_parquet(file, engine="pyarrow")
+        df_list.append(df)
 
-    # If load_processed_files fails (e.g., permission denied, corrupted file), script will exit.
-    processed_repo_file_paths = load_processed_files(STATE_FILE)
-    print(
-        f"Loaded {len(processed_repo_file_paths)} already processed file paths from state."
+    combined_df = pd.concat(df_list, ignore_index=True)
+    combined_df.to_parquet(
+        Path(local_dir) / "combined_urls.parquet",
+        index=False,
+        compression="zstd",
+        engine="pyarrow",
     )
+    print(f"Collated {len(combined_df)} URLs into combined_urls.parquet.")
 
+
+# upload
+def upload_to_hub(local_dir: str, snapshot: str):
     api = HfApi()
-    print(f"Fetching file list from repo: {REPO_ID}...")
-    # If api.list_repo_files fails (network issue, auth error), script will exit.
-    all_repo_files_details = api.list_repo_files(repo_id=REPO_ID, repo_type=REPO_TYPE)
+    api.create_repo(
+        repo_id="nhagar/txt360_urls",
+        exist_ok=True,
+        repo_type="dataset",
+    )
+    parquet_path = Path(local_dir) / "combined_urls.parquet"
 
-    if DIRECTORY_IN_REPO:
-        dir_prefix = (
-            DIRECTORY_IN_REPO
-            if DIRECTORY_IN_REPO.endswith("/")
-            else f"{DIRECTORY_IN_REPO}/"
-        )
-        if DIRECTORY_IN_REPO == "/":
-            dir_prefix = ""
-        all_repo_files = [
-            f
-            for f in all_repo_files_details
-            if f.startswith(dir_prefix) and f != dir_prefix
-        ]
-        if not all_repo_files and dir_prefix:
-            if DIRECTORY_IN_REPO in all_repo_files_details:
-                all_repo_files = [DIRECTORY_IN_REPO]
-    else:
-        all_repo_files = all_repo_files_details
-    print(f"Found {len(all_repo_files)} files in specified repo path.")
+    print(f"Uploading {parquet_path} to nhagar/txt360_urls as batch_{snapshot}...")
 
-    files_to_process = sorted(
-        [f for f in all_repo_files if f not in processed_repo_file_paths]
+    api.upload_file(
+        path_or_fileobj=parquet_path,
+        path_in_repo=f"batch_{snapshot}.parquet",
+        repo_id="nhagar/txt360_urls",
+        repo_type="dataset",
+        commit_message="Add combined URLs",
+        revision="main",
     )
 
-    if not files_to_process:
-        print(
-            "No new files to process. All files in the specified directory are already marked as processed."
-        )
-        return
 
-    print(f"{len(files_to_process)} files remaining to be processed.")
-
-    current_batch_files_info = []
-    current_batch_size_bytes = 0
-    batch_number = 1
-
-    for i, repo_file_path in enumerate(tqdm(files_to_process, desc="Overall Progress")):
-        current_batch_download_dir = os.path.join(
-            LOCAL_DOWNLOAD_BASE_DIR, f"batch_{batch_number}"
-        )
-        os.makedirs(current_batch_download_dir, exist_ok=True)
-
-        local_target_path = os.path.join(current_batch_download_dir, repo_file_path)
-        print(f"\nAttempting to download: {repo_file_path} to {local_target_path}")
-
-        # If hf_hub_download fails (network, disk space, permissions), script will exit.
-        downloaded_file_actual_path = hf_hub_download(
-            repo_id=REPO_ID,
-            filename=repo_file_path,
-            repo_type=REPO_TYPE,
-            local_dir=current_batch_download_dir,
-            resume_download=True,  # hf_hub_download has its own resilience for the download itself
-        )
-
-        # If os.path.getsize fails (e.g., file just deleted by another process), script will exit.
-        file_size_bytes = os.path.getsize(downloaded_file_actual_path)
-        print(f"Downloaded {repo_file_path} ({file_size_bytes / (1024 * 1024):.2f} MB)")
-
-        current_batch_files_info.append(
-            {
-                "repo_path": repo_file_path,
-                "local_path": downloaded_file_actual_path,
-                "size": file_size_bytes,
-            }
-        )
-        current_batch_size_bytes += file_size_bytes
-
-        is_last_file = i == len(files_to_process) - 1
-        if current_batch_size_bytes >= TARGET_BATCH_SIZE_BYTES or (
-            is_last_file and current_batch_files_info
-        ):
-            print(f"\n--- Processing Batch {batch_number} ---")
-            print(f"Target size: {TARGET_BATCH_SIZE_BYTES / (1024**3):.2f} GB")
-            print(f"Actual batch size: {current_batch_size_bytes / (1024**3):.2f} GB")
-            print(f"Files in batch: {len(current_batch_files_info)}")
-
-            for file_info in tqdm(
-                current_batch_files_info, desc=f"Files in Batch {batch_number}"
-            ):
-                # If custom_process_file raises an exception, script will exit.
-                custom_process_file(file_info["local_path"], "url")
-                # If mark_file_as_processed fails, script will exit.
-                mark_file_as_processed(STATE_FILE, file_info["repo_path"])
-
-            parquet_file = os.path.join(current_batch_download_dir, "batch.parquet")
-            con.execute(
-                f"COPY (SELECT * FROM read_parquet('{str(current_batch_download_dir)}/*.parquet')) TO '{str(parquet_file)}';"
-            )
-
-            # Upload to Hugging Face
-            api = HfApi()
-            repo_id_to_upload = "nhagar/txt360_urls"
-            batch_num_str = f"batch_{batch_number}"
-            path_in_repo = f"{batch_num_str}.parquet"
-            api.create_repo(
-                repo_id=repo_id_to_upload,
-                exist_ok=True,
-                repo_type="dataset",
-            )
-            print(
-                f"Uploading {parquet_file} to {repo_id_to_upload} as {path_in_repo}..."
-            )
-
-            api.upload_file(
-                path_or_fileobj=parquet_file,
-                path_in_repo=path_in_repo,
-                repo_id=repo_id_to_upload,
-                repo_type="dataset",
-                commit_message=f"Add batch {batch_num_str}",
-                revision="main",
-            )
-
-            print(f"Cleaning up local batch directory: {current_batch_download_dir}")
-            # If shutil.rmtree fails (e.g., permissions, file in use), script will exit.
-            shutil.rmtree(current_batch_download_dir)
-            print(f"Successfully deleted {current_batch_download_dir}.")
-
-            current_batch_files_info = []
-            current_batch_size_bytes = 0
-            batch_number += 1
-
-    print("\n--- All designated files processed. ---")
+# cleanup
+def cleanup_local_dir(local_dir: str):
+    print(f"Cleaning up local directory: {local_dir}")
+    for file in Path(local_dir).glob("**/*.parquet"):
+        file.unlink()
+    for file in Path(local_dir).glob("**/*.jsonl.gz"):
+        file.unlink()
+    print("Cleanup completed.")
 
 
-if __name__ == "__main__":
-    main()
+def main(snapshot: str, is_remote: bool = True):
+    if is_remote:
+        local_dir = "/scratch/nrh146/txt360"
+    else:
+        local_dir = "./data/txt360"
+
+    print(f"Using local directory: {local_dir}")
+    Path(local_dir).mkdir(parents=True, exist_ok=True)
+    download_snapshot(snapshot, local_dir)
+    process_urls_parallel(local_dir, snapshot)
+    collate_parquet_files(local_dir)
+    upload_to_hub(local_dir, snapshot)
+    cleanup_local_dir(local_dir)
