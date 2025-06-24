@@ -105,6 +105,7 @@ snapshots=(
 
 # State file to track processed snapshots
 STATE_FILE="txt360_processed.txt"
+SNAPSHOTS_FILE="snapshots_list.txt"
 
 # Parse command line arguments
 TEST_MODE=false
@@ -131,16 +132,38 @@ is_processed() {
     fi
 }
 
-# Function to mark a snapshot as processed
-mark_processed() {
-    local snapshot="$1"
-    echo "$snapshot" >> "$STATE_FILE"
+# Function to create snapshots list file for unprocessed snapshots
+create_snapshots_list() {
+    > "$SNAPSHOTS_FILE"
+    local unprocessed_count=0
+    
+    for snapshot in "${snapshots[@]}"; do
+        if ! is_processed "$snapshot"; then
+            echo "$snapshot" >> "$SNAPSHOTS_FILE"
+            unprocessed_count=$((unprocessed_count + 1))
+        fi
+    done
+    
+    echo $unprocessed_count
 }
 
-# Function to submit a SLURM job for a snapshot
-submit_job() {
-    local snapshot="$1"
-    local job_name="txt360_${snapshot}"
+# Function to submit SLURM job array
+submit_job_array() {
+    local num_jobs="$1"
+    
+    if [[ "$TEST_MODE" == true ]]; then
+        num_jobs=1
+    fi
+    
+    if [[ $num_jobs -eq 0 ]]; then
+        echo "No jobs to submit - all snapshots already processed"
+        return
+    fi
+    
+    local array_spec="1-${num_jobs}"
+    if [[ "$TEST_MODE" == true ]]; then
+        array_spec="1"
+    fi
     
     sbatch --account=p32491 \
            --partition=normal \
@@ -149,36 +172,49 @@ submit_job() {
            --cpus-per-task=4 \
            --mem=32G \
            --time=48:00:00 \
-           --job-name="$job_name" \
+           --job-name="txt360_array" \
            --mail-user=nicholas.hagar@northwestern.edu \
            --mail-type=ALL \
-           --wrap="module purge all; module load jq; uv run txt360_pipeline.py $snapshot --is_remote && echo $snapshot >> $STATE_FILE"
+           --array="$array_spec"%1 \
+           --wrap="
+               SNAPSHOT=\$(sed -n \"\${SLURM_ARRAY_TASK_ID}p\" $SNAPSHOTS_FILE)
+               echo \"Processing snapshot: \$SNAPSHOT\"
+               module purge all
+               module load jq
+               uv run txt360_pipeline.py \$SNAPSHOT --is_remote
+               if [[ \$? -eq 0 ]]; then
+                   echo \$SNAPSHOT >> $STATE_FILE
+                   echo \"Successfully processed: \$SNAPSHOT\"
+               else
+                   echo \"Failed to process: \$SNAPSHOT\"
+                   exit 1
+               fi
+           "
 }
 
-# Main processing loop
-echo "Starting txt360 pipeline..."
+# Main processing
+echo "Starting txt360 pipeline with job array..."
 echo "Test mode: $TEST_MODE"
 
-processed_count=0
-for snapshot in "${snapshots[@]}"; do
-    if is_processed "$snapshot"; then
-        echo "Skipping $snapshot (already processed)"
-        continue
-    fi
-    
-    echo "Submitting job for $snapshot"
-    submit_job "$snapshot"
-    processed_count=$((processed_count + 1))
-    
-    # In test mode, only submit one job
-    if [[ "$TEST_MODE" == true ]]; then
-        echo "Test mode: submitted 1 job, exiting"
-        break
-    fi
-done
+# Create list of unprocessed snapshots
+unprocessed_count=$(create_snapshots_list)
 
-if [[ $processed_count -eq 0 ]]; then
+if [[ $unprocessed_count -eq 0 ]]; then
     echo "All snapshots have been processed!"
-else
-    echo "Submitted $processed_count SLURM jobs"
+    rm -f "$SNAPSHOTS_FILE"
+    exit 0
 fi
+
+echo "Found $unprocessed_count unprocessed snapshots"
+
+if [[ "$TEST_MODE" == true ]]; then
+    echo "Test mode: submitting job array for 1 snapshot"
+else
+    echo "Submitting job array for $unprocessed_count snapshots (max 1 concurrent job)"
+fi
+
+submit_job_array "$unprocessed_count"
+
+echo "Job array submitted. Jobs will process sequentially with max concurrency of 1."
+echo "Snapshot list saved to: $SNAPSHOTS_FILE"
+echo "Progress tracking file: $STATE_FILE"
