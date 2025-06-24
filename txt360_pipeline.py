@@ -63,7 +63,7 @@ def process_urls_parallel(local_dir: str, snapshot: str):
                     [
                         (
                             file,
-                            ".meta.url",
+                            "meta.url",
                         )
                         for file in json_files
                     ],
@@ -145,8 +145,12 @@ def main(snapshot: str, is_remote: bool = True):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process txt360 snapshot")
     parser.add_argument("snapshot", help="Snapshot name to process")
-    parser.add_argument("--is_remote", action="store_true", default=False, 
-                       help="Use remote directory (/scratch/nrh146/txt360) instead of local")
-    
+    parser.add_argument(
+        "--is_remote",
+        action="store_true",
+        default=False,
+        help="Use remote directory (/scratch/nrh146/txt360) instead of local",
+    )
+
     args = parser.parse_args()
     main(args.snapshot, args.is_remote)
