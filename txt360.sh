@@ -170,7 +170,7 @@ submit_job_array() {
            --nodes=1 \
            --ntasks-per-node=1 \
            --cpus-per-task=4 \
-           --mem=80G \
+           --mem=100G \
            --time=48:00:00 \
            --job-name="txt360_array" \
            --mail-user=nicholas.hagar@northwestern.edu \
